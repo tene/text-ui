@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Stephen Weeks <tene@allalone.org>"]
 
 [dependencies]
+unicode-segmentation = "1.2"
