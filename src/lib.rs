@@ -1,98 +1,93 @@
-#[derive(Debug, Copy, Clone)]
-pub struct Context {
-    pub rows: u32,
-    pub cols: u32,
+#[derive(Clone)]
+pub enum Content {
+    Text(String),
+    VBox(Vec<Pane>),
+    HBox(Vec<Pane>),
+    HLine,
+    VLine,
 }
 
-// XXX Padding?  Margins?  Borders?
-pub struct TextArea {
-    pub rows: u32,
-    pub cols: u32,
-    pub content: Vec<String>,
+#[derive(Clone)]
+pub struct Pane {
+    pub content: Content,
+    pub rows: usize,
+    pub cols: usize,
 }
 
-// This API is definitely at the wrong layer
-// Might maybe be okay if refactored into a hierarchy?
-// But then it's just a copy of widget?
-// Where do we fit scrolling?
-impl TextArea {
-    pub fn new() -> TextArea {
-        TextArea {
-            rows: 0,
-            cols: 0,
-            content: Vec::new(),
-        }
-    }
-
-    // XXX These should probably return new TAs instead of mutating?
-    pub fn vconcat(&mut self, mut other: TextArea) {
-        self.rows += other.rows;
-        self.cols = std::cmp::max(self.cols, other.cols);
-        self.content.append(&mut other.content);
-    }
-    pub fn hconcat(&mut self, other: TextArea) {
-        self.content = self.content
-            .clone()
-            .into_iter()
-            .zip(other.content.into_iter())
-            .map(|(a,b)| a + &b)
-            .collect();
-        self.cols += other.cols;
-        self.rows = std::cmp::max(self.rows, other.rows);
+pub fn txt(s: String) -> Pane {
+    Pane {
+        rows: 1,
+        cols: s.len(),
+        content: Content::Text(s),
     }
 }
 
-pub trait Widget {
-    fn render(&self, ctx: Context) -> TextArea;
-}
-
-pub struct Text {
-    pub content: Vec<String>,
-}
-
-impl Widget for Text {
-    fn render(&self, ctx: Context) -> TextArea {
-        TextArea {
-            rows: ctx.rows,
-            cols: ctx.cols,
-            content: self.content.clone(),
-        }
+pub fn paragraph(s: &str) -> Pane {
+    let lines : Vec<Pane> = s.lines().map(|l| txt(l.to_owned())).collect();
+    match lines.len() {
+        0 => txt("".to_owned()),
+        1 => lines.into_iter().next().unwrap(),
+        _ => vbox(lines),
     }
 }
 
-// XXX Should this be its own widget, or a property on something??
-pub struct Bordered {
-    pub wrapped: Box<Widget>,
-}
-
-impl Widget for Bordered {
-    fn render(&self, ctx: Context) -> TextArea {
-        unimplemented!()
+pub fn vbox(mut panes: Vec<Pane>) -> Pane {
+    let cols = (&panes).iter().max_by_key(|p| p.cols).unwrap().cols;
+    let rows : usize = (&panes).iter().map(|p| p.rows).sum();
+    for p in panes.iter_mut() {
+        p.cols = cols;
+    }
+    Pane {
+        rows: rows,
+        cols: cols,
+        content: Content::VBox(panes),
     }
 }
 
-pub struct VBox {
-    pub inner: Vec<Box<Widget>>,
-}
-
-impl Widget for VBox {
-    fn render(&self, ctx: Context) -> TextArea {
-        self.inner.iter().fold(TextArea::new(), |mut ta, i| {
-            ta.vconcat(i.render(ctx.clone()));
-            ta
-        })
+pub fn hbox(mut panes: Vec<Pane>) -> Pane {
+    let rows = (&panes).iter().max_by_key(|p| p.rows).unwrap().rows;
+    let cols : usize = (&panes).iter().map(|p| p.cols).sum();
+    for p in panes.iter_mut() {
+        p.rows = rows;
+    }
+    Pane {
+        cols: cols,
+        rows: rows,
+        content: Content::HBox(panes),
     }
 }
 
-pub struct HBox {
-    pub inner: Vec<Box<Widget>>,
+pub fn render_string(pane: &Pane) -> String {
+    use std::iter::repeat;
+    match &pane.content {
+        &Content::Text(ref s) => format!("{:width$}", s, width=pane.cols),
+        &Content::VBox(ref lines) => lines
+            .iter()
+            .map(|p| render_string(&p))
+            .collect::<Vec<String>>()
+            .join("\n"),
+        &Content::HBox(ref cols) => cols
+            .iter()
+            .map(|p| render_string(&p)
+                .lines().map(|l| l.to_owned())
+                .chain(repeat(format!("{:width$}", "", width=p.cols).to_owned()))
+                .take(pane.rows)
+                .collect::<Vec<String>>()
+            )
+            .fold(repeat("".to_owned()).take(pane.rows).collect::<Vec<String>>(),
+                |a, i| a.into_iter().zip(i.into_iter())
+                    .map(|(a,b)| a + &b)
+                    .collect()
+            )
+            .join("\n"),
+        _ => "".to_owned(),
+    }
 }
 
-impl Widget for HBox {
-    fn render(&self, ctx: Context) -> TextArea {
-        self.inner.iter().fold(TextArea::new(), |mut ta, i| {
-            ta.hconcat(i.render(ctx.clone()));
-            ta
-        })
-    }
+#[test]
+fn basics() {
+    let s = txt("Hello World".to_owned());
+    let s2 = vbox(vec!(s.clone(), s.clone()));
+    assert_eq!(render_string(&s), "Hello World".to_owned());
+    assert_eq!(render_string(&s2), "Hello World\nHello World".to_owned());
 }
