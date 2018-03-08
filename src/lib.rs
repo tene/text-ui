@@ -1,109 +1,10 @@
-extern crate unicode_segmentation;
+pub mod backend;
+pub mod widget;
+use backend::{Render, Widget};
+//use widget::hbox;
 
-use unicode_segmentation::UnicodeSegmentation;
 use std::iter::repeat;
-
-#[derive(Clone)]
-pub struct TextCell {
-    glyph: Option<String>,
-}
-
-impl TextCell {
-    fn from_line(s: &str) -> Vec<TextCell> {
-        UnicodeSegmentation::graphemes(s, true)
-        .map(|g| TextCell::from_checked(g))
-        .collect()
-    }
-    fn from_checked(s: &str) -> TextCell {
-        TextCell {
-            glyph: Some(s.to_owned())
-        }
-    }
-    fn to_string(&self) -> String {
-        match &self.glyph {
-            &Some(ref s) => s.to_owned(),
-            &None        => "".to_owned(),
-        }
-    }
-    fn empty() -> TextCell {
-        TextCell {
-            glyph: None,
-        }
-    }
-}
-impl<'a> TextCell {
-    fn to_str(&'a self) -> &'a str {
-        match &self.glyph {
-            &Some(ref s) => s,
-            _       => " ",
-        }
-    }
-}
-
-#[derive(Clone)]
-pub struct TextGrid {
-    rows: usize,
-    cols: usize,
-    grid: Vec<Vec<TextCell>>,
-}
-
-impl TextGrid {
-    fn new_col(size: usize) -> TextGrid {
-        let mut col: Vec<Vec<TextCell>> = Vec::with_capacity(size);
-        col.resize(size, Vec::new());
-        TextGrid {
-            rows: size,
-            cols: 0,
-            grid: col,
-        }
-    }
-    fn new_row(size: usize) -> TextGrid {
-        TextGrid {
-            rows: 0,
-            cols: size,
-            grid: Vec::new(),
-        }
-    }
-    fn from_str(s: &str) -> TextGrid {
-        let mut grid: Vec<Vec<TextCell>> = s.lines()
-            .map(TextCell::from_line)
-            .collect();
-        let rows = grid.len();
-        let cols = (&grid).iter().max_by_key(|l| l.len()).unwrap().len();
-        for row in grid.iter_mut() {
-            row.resize(cols, TextCell::empty());
-        }
-        TextGrid { rows: rows, cols: cols, grid: grid }
-    }
-    fn to_string(&self) -> String {
-        (&self.grid).iter()
-            .map(
-                |row| row.iter().map(|c| c.to_string()).collect::<Vec<String>>().join("")
-            ).collect::<Vec<String>>().join("\n")
-    }
-    fn happend(&mut self, other: &mut Self) {
-        assert_eq!(&self.rows, &other.rows);
-        for (r1, r2) in self.grid.iter_mut().zip(other.grid.iter_mut()) {
-            r1.append(r2)
-        }
-        self.cols += other.cols;
-    }
-    fn vappend(&mut self, other: &mut Self) {
-        assert_eq!(&self.cols, &other.cols);
-        self.grid.append(&mut other.grid);
-        self.rows += other.rows;
-    }
-    fn hconcat(&self, other: &Self) -> TextGrid {
-        let mut n = (*self).clone();
-        (&mut n).happend(&mut other.clone());
-        n
-    }
-    fn vconcat(&self, other: &Self) -> TextGrid {
-        let mut n = (*self).clone();
-        (&mut n).vappend(&mut other.clone());
-        n
-    }
-}
+use backend::text::TextGrid;
 
 #[derive(Clone)]
 pub enum Content {
@@ -170,11 +71,11 @@ pub fn render_string(pane: &Pane) -> String {
 
 pub fn render(pane: &Pane) -> TextGrid {
     match &pane.content {
-        &Content::Text(ref s) => TextGrid::from_str(&format!("{:width$}", s, width=pane.cols)),
+        &Content::Text(ref s) => TextGrid::str(&format!("{:width$}", s, width=pane.cols)),
         &Content::VBox(ref lines) => lines
             .iter()
             .map(|p| render(&p))
-            .chain(repeat(TextGrid::from_str(&format!("{:width$}", "", width=pane.cols))))
+            .chain(repeat(TextGrid::str(&format!("{:width$}", "", width=pane.cols))))
             .take(pane.rows)
             .fold(TextGrid::new_row(pane.cols),
                 |a, i| a.vconcat(&i)
@@ -185,7 +86,7 @@ pub fn render(pane: &Pane) -> TextGrid {
             .fold(TextGrid::new_col(pane.rows),
                 |a, i| a.hconcat(&i)
             ),
-        _ => TextGrid::from_str("???"),
+        _ => TextGrid::str("???"),
     }
 }
 

@@ -5,3 +5,4 @@ authors = ["Stephen Weeks <tene@allalone.org>"]
 
 [dependencies]
 unicode-segmentation = "1.2"
+ggez = "*"
