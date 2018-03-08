@@ -1,5 +1,7 @@
 pub mod text;
+pub mod ggez;
 pub use self::text::TextGrid;
+pub use self::ggez::GGState;
 
 pub trait Render: Sized {
     fn render(&self, w: &Widget<Self>) -> Self {
