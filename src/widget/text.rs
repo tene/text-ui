@@ -1,20 +1,20 @@
-use ::backend::{Widget, Render};
+use ::backend::{Widget, Builder};
 use std::marker;
 
 #[derive(Debug, Clone)]
-pub struct Text<R: Render> {
+pub struct Text<B: Builder> {
     pub text: String,
-    _marker: marker::PhantomData<R>,
+    _marker: marker::PhantomData<B>,
 }
 
-impl<R: Render> Text<R> {
-    pub fn from_string(s: String) -> Text<R> {
+impl<B: Builder> Text<B> {
+    pub fn from_string(s: String) -> Text<B> {
         Text { text: s, _marker: marker::PhantomData }
     }
 }
 
-impl<R: Render> Widget<R> for Text<R> {
-        fn render(&self) -> R {
-            R::str(&self.text)
+impl<B: Builder> Widget<B> for Text<B> {
+        fn build_with(&self, b: &mut B) -> B::Drawable {
+            b.str(&self.text)
         }
 }

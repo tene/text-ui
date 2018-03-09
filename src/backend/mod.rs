@@ -1,23 +1,24 @@
 pub mod text;
 pub mod ggez;
-pub use self::text::TextGrid;
-pub use self::ggez::GGState;
+pub use self::text::{TextGrid, TextBuilder};
+pub use self::ggez::{GGState, GGBuilder};
 
-pub trait Render: Sized {
-    fn render(&self, w: &Widget<Self>) -> Self {
-        w.render()
+pub trait Builder: Sized {
+    type Drawable;
+    fn build_from(&mut self, w: &Widget<Self>) -> Self::Drawable {
+        w.build_with(self)
     }
-    fn string(s: &String) -> Self {
-        Self::str(s.as_str())
+    fn string(&mut self, s: &String) -> Self::Drawable {
+        self.str(s.as_str())
     }
-    fn str(&str) -> Self;
-    fn happend(&mut self, &mut Self);
-    fn hconcat(&self, &Self) -> Self;
-    fn vappend(&mut self, &mut Self);
-    fn vconcat(&self, &Self) -> Self;
-    fn empty() -> Self;
+    fn str(&mut self, &str) -> Self::Drawable;
+    fn happend(&mut self, &mut Self::Drawable, &mut Self::Drawable);
+    fn hconcat(&mut self, &Self::Drawable, &Self::Drawable) -> Self::Drawable;
+    fn vappend(&mut self, &mut Self::Drawable, &mut Self::Drawable);
+    fn vconcat(&mut self, &Self::Drawable, &Self::Drawable) -> Self::Drawable;
+    fn empty(&mut self) -> Self::Drawable;
 }
 
-pub trait Widget<R: Render> {
-    fn render(&self) -> R;
+pub trait Widget<B: Builder> {
+    fn build_with(&self, &mut B) -> B::Drawable;
 }

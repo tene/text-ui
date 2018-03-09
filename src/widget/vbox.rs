@@ -1,39 +1,39 @@
-use ::backend::{Widget, Render};
+use ::backend::{Widget, Builder};
 
-pub struct VBox<R: Render> {
-    pub contents: Vec<Box<Widget<R>>>,
+pub struct VBox<B: Builder> {
+    pub contents: Vec<Box<Widget<B>>>,
 }
 
-impl<R: Render> VBox<R> {
-    pub fn from_vec(panes: Vec<Box<Widget<R>>>) -> Self {
+impl<B: Builder> VBox<B> {
+    pub fn from_vec(panes: Vec<Box<Widget<B>>>) -> Self {
         VBox { contents: panes }
     }
-    pub fn from_pair(a: Box<Widget<R>>, b: Box<Widget<R>>) -> Self {
-        let mut panes: Vec<Box<Widget<R>>> = Vec::new();
+    pub fn from_pair(a: Box<Widget<B>>, b: Box<Widget<B>>) -> Self {
+        let mut panes: Vec<Box<Widget<B>>> = Vec::new();
         panes.push(a);
         panes.push(b);
         VBox {
             contents: panes,
         }
     }
-    pub fn append(&mut self, w: Box<Widget<R>>) {
+    pub fn append(&mut self, w: Box<Widget<B>>) {
         self.contents.push(w);
     }
 }
 
-impl<R: Render> Widget<R> for VBox<R> {
-    fn render(&self) -> R {
-        let mut items: Vec<R> = self
+impl<B: Builder> Widget<B> for VBox<B> {
+    fn build_with(&self, b: &mut B) -> B::Drawable {
+        let mut items: Vec<B::Drawable> = self
         .contents.iter()
-        .map(|w| w.render())
+        .map(|w| w.build_with(b))
         .collect();
         let rv = match items.len() {
-            0 => R::empty(),
+            0 => b.empty(),
             1 => items.remove(0),
             _ => {
                 let first = items.remove(0);
                 items.into_iter()
-                .fold(first, |a, i| R::vconcat(&a, &i))
+                .fold(first, |a, i| b.vconcat(&a, &i))
             }
         };
         rv

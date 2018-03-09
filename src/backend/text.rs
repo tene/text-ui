@@ -2,7 +2,7 @@ extern crate unicode_segmentation;
 
 use self::unicode_segmentation::UnicodeSegmentation;
 
-use ::backend::Render;
+use ::backend::Builder;
 
 use std::iter::repeat;
 
@@ -44,7 +44,7 @@ pub struct TextGrid {
 }
 
 impl TextGrid {
-    pub fn new_col(size: usize) -> TextGrid {
+    /*fn new_col(size: usize) -> TextGrid {
         let mut col: Vec<Vec<TextCell>> = Vec::with_capacity(size);
         col.resize(size, Vec::new());
         TextGrid {
@@ -53,13 +53,13 @@ impl TextGrid {
             grid: col,
         }
     }
-    pub fn new_row(size: usize) -> TextGrid {
+    fn new_row(size: usize) -> TextGrid {
         TextGrid {
             rows: 0,
             cols: size,
             grid: Vec::new(),
         }
-    }
+    }*/
     fn blank_row(size: usize) -> Vec<TextCell> {
         let mut row: Vec<TextCell> = Vec::with_capacity(size);
         row.resize(size, TextCell::empty());
@@ -71,9 +71,7 @@ impl TextGrid {
                 |row| row.iter().map(|c| c.to_string()).collect::<Vec<String>>().join("")
             ).collect::<Vec<String>>().join("\n")
     }
-}
-
-impl Render for TextGrid {
+    
     fn str(s: &str) -> TextGrid {
         let mut grid: Vec<Vec<TextCell>> = s.lines()
             .map(TextCell::from_line)
@@ -136,5 +134,35 @@ impl Render for TextGrid {
             cols: 0,
             grid: Vec::new(),
         }
+    }
+}
+
+pub struct TextBuilder {}
+
+impl TextBuilder {
+    pub fn new() -> TextBuilder {
+        TextBuilder {}
+    }
+}
+
+impl Builder for TextBuilder {
+    type Drawable = TextGrid;
+    fn str(&mut self, s: &str) -> Self::Drawable {
+        TextGrid::str(s)
+    }
+    fn happend(&mut self, a: &mut Self::Drawable, b: &mut Self::Drawable) {
+        TextGrid::happend(a,b)
+    }
+    fn hconcat(&mut self, a: &Self::Drawable, b: &Self::Drawable) -> Self::Drawable {
+        TextGrid::hconcat(a,b)
+    }
+    fn vappend(&mut self, a: &mut Self::Drawable, b: &mut Self::Drawable) {
+        TextGrid::vappend(a,b)
+    }
+    fn vconcat(&mut self, a: &Self::Drawable, b: &Self::Drawable) -> Self::Drawable {
+        TextGrid::vconcat(a,b)
+    }
+    fn empty(&mut self) -> Self::Drawable {
+        TextGrid::empty()
     }
 }
