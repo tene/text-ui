@@ -1,5 +1,8 @@
 extern crate text_ui;
 
+use text_ui::pane::Pane;
+use text_ui::widget::{Input,Text};
+
 extern crate termion;
 
 use termion::event::{Key, Event};
@@ -8,27 +11,6 @@ use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 use termion::cursor::Goto;
 use std::io::{Write, stdout, stdin};
-
-struct Pane {
-    x: u16,
-    y: u16,
-    content: Vec<String>,
-}
-
-impl Pane {
-    fn render_into(&self, screen: &mut impl Write) {
-        for (i, row) in self.content.iter().enumerate() {
-            write!(screen, "{}{}", Goto(self.x, self.y + i as u16), row).unwrap();
-        }
-    }
-    fn new(x: u16, y: u16, content: Vec<String>) -> Pane {
-        Pane {
-            x: x,
-            y: y,
-            content: content,
-        }
-    }
-}
 
 struct App {
     log: Vec<String>,
@@ -53,14 +35,10 @@ impl App {
     }
 
     fn render(&self) -> Vec<Pane> {
-        let loglen = self.log.len();
-        let lines = if loglen > self.height as usize -1 {
-            self.log.clone().split_off(loglen - (self.height as usize -1))
-        } else {
-            self.log.clone()
-        };
-        let log = Pane::new(1, 1, lines);
-        let input = Pane::new(1, self.height, vec!(self.input.clone()));
+        let textw = Text::new(self.log.clone());
+        let inw = Input::new(&self.input);
+        let log = Pane::new(1, 1, textw.render(self.width, self.height-1));
+        let input = Pane::new(1, self.height, inw.render(self.width, 1));
         vec!(log, input)
     }
 
@@ -73,12 +51,18 @@ impl App {
     }
 }
 
-fn render_panes(screen: &mut impl Write, panes: Vec<Pane>) {
+pub fn render_panes(screen: &mut impl Write, panes: Vec<Pane>) {
     write!(screen, "{}", termion::clear::All).unwrap();
     for pane in panes.into_iter() {
-        pane.render_into(screen);
+        render_pane(&pane, screen);
     }
     screen.flush().unwrap();
+}
+
+fn render_pane(p: &Pane, screen: &mut impl Write) {
+    for (i, row) in p.content.iter().enumerate() {
+        write!(screen, "{}{}", Goto(p.x, p.y + i as u16), row).unwrap();
+    }
 }
 
 fn main() {
