@@ -31,7 +31,7 @@ impl Input {
                 self.index += 1;
             },
             Key::Left => self.index = max(self.index-1, 0),
-            Key::Right => self.index = min(self.buf.len()-1, self.index+1),
+            Key::Right => self.index = min(self.buf.len(), self.index+1),
             _ => {},
         }
     }

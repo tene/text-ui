@@ -2,7 +2,7 @@ extern crate text_ui;
 
 use text_ui::pane::{Pane, Render};
 use text_ui::widget::{Input,Text};
-use text_ui::backend::render_panes;
+use text_ui::backend::draw_panes;
 
 extern crate termion;
 
@@ -10,8 +10,7 @@ use termion::event::{Key, Event};
 use termion::input::{TermRead};
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use termion::cursor::Goto;
-use std::io::{Write, stdout, stdin};
+use std::io::{stdout, stdin};
 
 struct App {
     log: Text,
@@ -56,7 +55,7 @@ fn main() {
     let mut app = App::new();
 
     let mut panes = app.render();
-    render_panes(&mut screen, panes);
+    draw_panes(&mut screen, panes);
 
     for c in stdin.events() {
         let evt = c.unwrap();
@@ -67,6 +66,6 @@ fn main() {
             _ => {}
         }
         panes = app.render();
-        render_panes(&mut screen, panes);
+        draw_panes(&mut screen, panes);
     }
 }
