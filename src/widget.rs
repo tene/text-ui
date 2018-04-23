@@ -1,4 +1,4 @@
-use ::pane::Pane;
+use termion::event::{Key};
 
 pub struct Input {
     buf: String,
@@ -11,6 +11,15 @@ impl Input {
     pub fn new(s: &str) -> Input {
         Input {
             buf: s.to_owned(),
+        }
+    }
+    pub fn submit(&mut self) -> String {
+        self.buf.split_off(0)
+    }
+    pub fn keypress(&mut self, key: Key) {
+        match key {
+            Key::Char(k) => self.buf.push(k),
+            _ => {},
         }
     }
 }
@@ -33,5 +42,8 @@ impl Text {
         Text {
             lines: l,
         }
+    }
+    pub fn push(&mut self, s: String) {
+        self.lines.push(s);
     }
 }

@@ -13,8 +13,8 @@ use termion::cursor::Goto;
 use std::io::{Write, stdout, stdin};
 
 struct App {
-    log: Vec<String>,
-    input: String,
+    log: Text,
+    input: Input,
     height: u16,
     width: u16,
 }
@@ -23,30 +23,27 @@ impl App {
     fn new() -> App {
         let size = termion::terminal_size().unwrap();
         App {
-            log: vec!(),
-            input: String::new(),
+            log: Text::new(vec!()),
+            input: Input::new(""),
             width: size.0,
             height: size.1,
         }
     }
 
     fn log_msg(&mut self) {
-        self.log.push(self.input.split_off(0));
+        self.log.push(self.input.submit());
     }
 
     fn render(&self) -> Vec<Pane> {
-        let textw = Text::new(self.log.clone());
-        let inw = Input::new(&self.input);
-        let log = Pane::new(1, 1, textw.render(self.width, self.height-1));
-        let input = Pane::new(1, self.height, inw.render(self.width, 1));
+        let log = Pane::new(1, 1, self.log.render(self.width, self.height-1));
+        let input = Pane::new(1, self.height, self.input.render(self.width, 1));
         vec!(log, input)
     }
 
     fn input(&mut self, key: Key) {
         match key {
             Key::Char('\n') => self.log_msg(),
-            Key::Char(k) => self.input.push(k),
-            _ => {},
+            k => self.input.keypress(k),
         }
     }
 }
