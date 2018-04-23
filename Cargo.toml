@@ -5,7 +5,4 @@ authors = ["Stephen Weeks <tene@allalone.org>"]
 
 [dependencies]
 unicode-segmentation = "1.2"
-ggez = "*"
-
-[patch.crates-io]
-app_dirs = { git = "https://github.com/koute/app-dirs-rs" }
+termion = "1.5.1"
