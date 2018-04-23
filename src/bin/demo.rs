@@ -1,7 +1,8 @@
 extern crate text_ui;
 
-use text_ui::pane::Pane;
+use text_ui::pane::{Pane, Render};
 use text_ui::widget::{Input,Text};
+use text_ui::backend::render_panes;
 
 extern crate termion;
 
@@ -35,8 +36,8 @@ impl App {
     }
 
     fn render(&self) -> Vec<Pane> {
-        let log = Pane::new(1, 1, self.log.render(self.width, self.height-1));
-        let input = Pane::new(1, self.height, self.input.render(self.width, 1));
+        let log = self.log.render(1, 1, self.width, self.height-1);
+        let input = self.input.render(1, self.height, self.width, 1);
         vec!(log, input)
     }
 
@@ -45,20 +46,6 @@ impl App {
             Key::Char('\n') => self.log_msg(),
             k => self.input.keypress(k),
         }
-    }
-}
-
-pub fn render_panes(screen: &mut impl Write, panes: Vec<Pane>) {
-    write!(screen, "{}", termion::clear::All).unwrap();
-    for pane in panes.into_iter() {
-        render_pane(&pane, screen);
-    }
-    screen.flush().unwrap();
-}
-
-fn render_pane(p: &Pane, screen: &mut impl Write) {
-    for (i, row) in p.content.iter().enumerate() {
-        write!(screen, "{}{}", Goto(p.x, p.y + i as u16), row).unwrap();
     }
 }
 
