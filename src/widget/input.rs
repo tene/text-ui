@@ -1,8 +1,9 @@
 use termion::event::{Key};
 use std::cmp::{min,max};
-use widget::{Widget};
+use widget::{Bound, BoundSize, Widget};
 use ::{Size, Position};
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Input {
     buf: String,
     index: usize,
@@ -12,7 +13,13 @@ impl Widget for Input {
     fn render_content(&self, _size: Size) -> Option<Vec<String>> {
         Some(vec!(self.buf.clone()))
     }
-    fn render_focus(&self, _size: Size) -> Option<Position> { Some(Position::new(self.index as u16, 0)) }
+    fn render_focus(&self, _size: Size) -> Option<Position> { Some(Position::new(self.index as u16 + 1, 1)) }
+    fn render_bounds(&self) -> BoundSize {
+        BoundSize {
+            width: Bound::AtLeast(1),
+            height: Bound::Fixed(1),
+        }
+    }
 }
 
 impl Input {

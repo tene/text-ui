@@ -9,25 +9,32 @@ fn goto(pos: Position) -> Goto { Goto(pos.x, pos.y) }
 
 pub fn draw_pane(screen: &mut impl Write, p: &Pane) {
     write!(screen, "{}", termion::clear::All).unwrap();
-    draw_pane_helper(screen, p);
-    match &p.focus {
-        Some(pos) => write!(screen, "{}{}", Show, goto(p.position + *pos)),
+    let focus = draw_pane_helper(screen, p);
+    match focus {
+        Some(pos) => write!(screen, "{}{}", Show, goto(p.position + pos)),
         None        => write!(screen, "{}", Hide),
     }.unwrap();
     screen.flush().unwrap();
 }
 
-fn draw_pane_helper(screen: &mut impl Write, p: &Pane) {
+fn draw_pane_helper(screen: &mut impl Write, p: &Pane) -> Option<Position> {
     match &p.content {
         Some(lines) => for (i, row) in lines.iter().enumerate() {
             write!(screen, "{}{}", goto(p.position.offset(0,i as u16)), row).unwrap();
         },
         None => {},
     }
+    let mut child_focus = None;
     match &p.children {
         Some(children) => for child in children {
-            draw_pane_helper(screen, child)
+            let f = draw_pane_helper(screen, child);
+            if f.is_some() { child_focus = f};
         },
         None => {},
+    }
+    if p.focus.is_some() {
+        p.focus
+    } else {
+        child_focus
     }
 }

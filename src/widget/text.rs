@@ -1,6 +1,7 @@
 use widget::{Widget};
 use ::{Size};
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Text {
     lines: Vec<String>,
 }

@@ -44,6 +44,11 @@ impl App {
 }
 
 impl Widget for App {
+    fn render(&self, pos: Position, size: Size) -> Pane {
+        use text_ui::widget::VBox;
+        let vbox = VBox{ contents: vec!(Box::new(self.log.clone()), Box::new(self.input.clone()))};
+        vbox.render(pos, size)
+    }
     fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
         let log = self.log.render(Position::new(1,1), Size::new(size.width, size.height-1));
         let input = self.input.render(Position::new(1, size.width), Size::new(size.width, 1));
