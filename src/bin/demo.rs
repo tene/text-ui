@@ -3,6 +3,7 @@ extern crate text_ui;
 use text_ui::pane::{Pane, Widget};
 use text_ui::widget::{Input,Text};
 use text_ui::backend::draw_pane;
+use text_ui::{Position, Size};
 
 extern crate termion;
 
@@ -43,14 +44,14 @@ impl App {
 }
 
 impl Widget for App {
-    fn render_children(&self, width: u16, height: u16) -> Option<Vec<Pane>> {
-        let log = self.log.render(1, 1, width, height-1);
-        let input = self.input.render(1, height ,width, 1);
+    fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
+        let log = self.log.render(Position::new(1,1), Size::new(size.width, size.height-1));
+        let input = self.input.render(Position::new(1, size.width), Size::new(size.width, 1));
         Some(vec!(log,input))
     }
-    fn render_focus(&self, width: u16, height: u16) -> Option<(u16, u16)> {
-        if let Some((col, _)) = self.input.render_focus(width, height) {
-            Some((col, height))
+    fn render_focus(&self, size: Size) -> Option<Position> {
+        if let Some(pos) = self.input.render_focus(Size::new(size.width, 1)) {
+            Some(pos.offset(0, size.height-1))
         } else {
             None
         }
@@ -64,7 +65,7 @@ fn main() {
     let mut app = App::new();
     app.log.push("Esc to exit".to_string());
 
-    let mut pane = app.render(1, 1, app.width, app.height);
+    let mut pane = app.render(Position::new(1,1), Size::new(app.width, app.height));
     draw_pane(&mut screen, &pane);
 
     for c in stdin.events() {
@@ -76,7 +77,7 @@ fn main() {
             
             _ => {}
         }
-        pane = app.render(1, 1, app.width, app.height);
+        pane = app.render(Position::new(1,1), Size::new(app.width, app.height));
         draw_pane(&mut screen, &pane);
     }
 }
