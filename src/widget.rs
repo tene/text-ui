@@ -1,16 +1,17 @@
 use termion::event::{Key};
 use std::cmp::{min,max};
-use pane::{Pane,Render};
+use pane::{Widget};
 
 pub struct Input {
     buf: String,
     index: usize,
 }
 
-impl Render for Input {
-    fn render_content(&self, _width: u16, _height: u16) -> (Vec<String>, Option<(u16,u16)>) {
-        (vec!(self.buf.clone()), Some((self.index as u16, 0)))
+impl Widget for Input {
+    fn render_content(&self, _width: u16, _height: u16) -> Option<Vec<String>> {
+        Some(vec!(self.buf.clone()))
     }
+    fn render_focus(&self, _width: u16, _height: u16) -> Option<(u16,u16)> { Some((self.index as u16, 0)) }
 }
 
 impl Input {
@@ -41,15 +42,15 @@ pub struct Text {
     lines: Vec<String>,
 }
 
-impl Render for Text {
-    fn render_content(&self, _width: u16, height: u16) -> (Vec<String>, Option<(u16,u16)>) {
+impl Widget for Text {
+    fn render_content(&self, _width: u16, height: u16) -> Option<Vec<String>> {
         let loglen = self.lines.len();
         let lines = if loglen > height as usize {
             self.lines.clone().split_off(loglen - height as usize)
         } else {
             self.lines.clone()
         };
-        (lines, None)
+        Some(lines)
     }
 }
 
