@@ -1,7 +1,7 @@
 extern crate text_ui;
 
-use text_ui::pane::{Pane, Widget};
-use text_ui::widget::{Input,Text};
+use text_ui::pane::Pane;
+use text_ui::widget::{Input,Text,Widget};
 use text_ui::backend::draw_pane;
 use text_ui::{Position, Size};
 
