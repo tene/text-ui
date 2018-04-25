@@ -1,4 +1,4 @@
-use ::{Position};
+use Position;
 
 pub struct Pane {
     pub position: Position,

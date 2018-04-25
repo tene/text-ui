@@ -1,17 +1,17 @@
 extern crate text_ui;
 
-use text_ui::pane::Pane;
-use text_ui::widget::{Input,Text,Widget};
 use text_ui::backend::draw_pane;
+use text_ui::pane::Pane;
+use text_ui::widget::{Input, Text, Widget};
 use text_ui::{Position, Size};
 
 extern crate termion;
 
-use termion::event::{Key, Event};
-use termion::input::{TermRead};
+use std::io::{stdin, stdout};
+use termion::event::{Event, Key};
+use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use std::io::{stdout, stdin};
 
 struct App {
     log: Text,
@@ -24,7 +24,7 @@ impl App {
     fn new() -> App {
         let size = termion::terminal_size().unwrap();
         App {
-            log: Text::new(vec!()),
+            log: Text::new(vec![]),
             input: Input::new(""),
             width: size.0,
             height: size.1,
@@ -46,17 +46,21 @@ impl App {
 impl Widget for App {
     fn render(&self, pos: Position, size: Size) -> Pane {
         use text_ui::widget::VBox;
-        let vbox = VBox{ contents: vec!(Box::new(self.log.clone()), Box::new(self.input.clone()))};
+        let vbox = VBox {
+            contents: vec![Box::new(self.log.clone()), Box::new(self.input.clone())],
+        };
         vbox.render(pos, size)
     }
     fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
-        let log = self.log.render(Position::new(1,1), Size::new(size.width, size.height-1));
-        let input = self.input.render(Position::new(1, size.width), Size::new(size.width, 1));
-        Some(vec!(log,input))
+        let log = self.log
+            .render(Position::new(1, 1), Size::new(size.width, size.height - 1));
+        let input = self.input
+            .render(Position::new(1, size.width), Size::new(size.width, 1));
+        Some(vec![log, input])
     }
     fn render_focus(&self, size: Size) -> Option<Position> {
         if let Some(pos) = self.input.render_focus(Size::new(size.width, 1)) {
-            Some(pos.offset(0, size.height-1))
+            Some(pos.offset(0, size.height - 1))
         } else {
             None
         }
@@ -70,7 +74,7 @@ fn main() {
     let mut app = App::new();
     app.log.push("Esc to exit".to_string());
 
-    let mut pane = app.render(Position::new(1,1), Size::new(app.width, app.height));
+    let mut pane = app.render(Position::new(1, 1), Size::new(app.width, app.height));
     draw_pane(&mut screen, &pane);
 
     for c in stdin.events() {
@@ -79,10 +83,10 @@ fn main() {
         match evt {
             Event::Key(Key::Esc) => break,
             Event::Key(k) => app.input(k),
-            
+
             _ => {}
         }
-        pane = app.render(Position::new(1,1), Size::new(app.width, app.height));
+        pane = app.render(Position::new(1, 1), Size::new(app.width, app.height));
         draw_pane(&mut screen, &pane);
     }
 }

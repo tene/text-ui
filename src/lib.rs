@@ -1,7 +1,7 @@
 extern crate termion;
+pub mod backend;
 pub mod pane;
 pub mod widget;
-pub mod backend;
 use std::ops::Add;
 
 // XXX Should be one-based???
@@ -13,10 +13,7 @@ pub struct Position {
 
 impl Position {
     pub fn new(x: u16, y: u16) -> Position {
-        Position {
-            x: x,
-            y: y,
-        }
+        Position { x: x, y: y }
     }
     pub fn offset(self, x: u16, y: u16) -> Position {
         Position {

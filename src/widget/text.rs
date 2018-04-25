@@ -1,5 +1,5 @@
-use widget::{Widget};
-use ::{Size};
+use widget::Widget;
+use Size;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Text {
@@ -20,9 +20,7 @@ impl Widget for Text {
 
 impl Text {
     pub fn new(l: Vec<String>) -> Text {
-        Text {
-            lines: l,
-        }
+        Text { lines: l }
     }
     pub fn push(&mut self, s: String) {
         self.lines.push(s);
