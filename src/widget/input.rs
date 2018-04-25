@@ -1,5 +1,5 @@
 use termion::event::{Key};
-use std::cmp::{min,max};
+use std::cmp::{min};
 use widget::{Bound, BoundSize, Widget};
 use ::{Size, Position};
 
@@ -13,7 +13,7 @@ impl Widget for Input {
     fn render_content(&self, _size: Size) -> Option<Vec<String>> {
         Some(vec!(self.buf.clone()))
     }
-    fn render_focus(&self, _size: Size) -> Option<Position> { Some(Position::new(self.index as u16 + 1, 1)) }
+    fn render_focus(&self, _size: Size) -> Option<Position> { Some(Position::new(self.index as u16, 0)) }
     fn render_bounds(&self) -> BoundSize {
         BoundSize {
             width: Bound::AtLeast(1),
@@ -39,7 +39,7 @@ impl Input {
                 self.buf.insert(self.index, k);
                 self.index += 1;
             },
-            Key::Left => self.index = max(self.index-1, 0),
+            Key::Left => if self.index > 0 { self.index -= 1 },
             Key::Right => self.index = min(self.buf.len(), self.index+1),
             _ => {},
         }

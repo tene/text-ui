@@ -31,8 +31,8 @@ impl Add for Position {
 
     fn add(self, other: Position) -> Position {
         Position {
-            x: self.x + other.x - 1,
-            y: self.y + other.y - 1,
+            x: self.x + other.x,
+            y: self.y + other.y,
         }
     }
 }
