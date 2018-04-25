@@ -9,6 +9,9 @@ pub use self::vbox::VBox;
 use pane::Pane;
 use {Position, Size};
 
+use std::sync::Arc;
+use std::sync::RwLock;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Bound {
     Fixed(u16),
@@ -48,5 +51,47 @@ pub trait Widget {
             width: Bound::AtLeast(1),
             height: Bound::AtLeast(1),
         }
+    }
+}
+
+impl<T> Widget for Arc<T>
+where
+    T: Widget,
+{
+    fn render(&self, pos: Position, size: Size) -> Pane {
+        (**self).render(pos, size)
+    }
+    fn render_content(&self, size: Size) -> Option<Vec<String>> {
+        (**self).render_content(size)
+    }
+    fn render_focus(&self, size: Size) -> Option<Position> {
+        (**self).render_focus(size)
+    }
+    fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
+        (**self).render_children(size)
+    }
+    fn render_bounds(&self) -> BoundSize {
+        (**self).render_bounds()
+    }
+}
+
+impl<T> Widget for RwLock<T>
+where
+    T: Widget,
+{
+    fn render(&self, pos: Position, size: Size) -> Pane {
+        self.read().unwrap().render(pos, size)
+    }
+    fn render_content(&self, size: Size) -> Option<Vec<String>> {
+        self.read().unwrap().render_content(size)
+    }
+    fn render_focus(&self, size: Size) -> Option<Position> {
+        self.read().unwrap().render_focus(size)
+    }
+    fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
+        self.read().unwrap().render_children(size)
+    }
+    fn render_bounds(&self) -> BoundSize {
+        self.read().unwrap().render_bounds()
     }
 }
