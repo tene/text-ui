@@ -59,8 +59,9 @@ impl DemoApp {
     }
 }
 
-impl App<Arc<RwLock<VBox>>> for DemoApp {
-    fn widget(&self) -> Arc<RwLock<VBox>> {
+impl App for DemoApp {
+    type UI = Arc<RwLock<VBox>>;
+    fn widget(&self) -> Self::UI {
         self.vbox.clone()
     }
     fn size(&self) -> Size {
