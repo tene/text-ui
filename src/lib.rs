@@ -5,6 +5,14 @@ pub mod pane;
 pub mod widget;
 use std::ops::Add;
 
+pub use termion::event::Event as Input;
+
+// XXX Ugh, naming?!?!
+pub enum Event<A> {
+    InputEvent(Input),
+    AppEvent(A),
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
     pub x: u16,

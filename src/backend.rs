@@ -11,6 +11,7 @@ use std::io::Write;
 use widget::Widget;
 use Position;
 use Size;
+use Event;
 
 fn goto(pos: Position) -> Goto {
     Goto(pos.x, pos.y)
@@ -25,7 +26,7 @@ pub fn run_app(app: &mut impl App) {
 
     for c in stdin.events() {
         let evt = c.unwrap();
-        match app.handle_event(evt) {
+        match app.handle_event(Event::InputEvent(evt)) {
             Ok(_) => {}
             Err(_) => break,
         }

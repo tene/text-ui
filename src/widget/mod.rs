@@ -2,7 +2,7 @@ pub mod input;
 pub mod text;
 pub mod vbox;
 
-pub use self::input::Input;
+pub use self::input::TextInput;
 pub use self::text::Text;
 pub use self::vbox::VBox;
 

@@ -4,12 +4,12 @@ use widget::{Bound, BoundSize, Widget};
 use {Position, Size};
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct Input {
+pub struct TextInput {
     buf: String,
     index: usize,
 }
 
-impl Widget for Input {
+impl Widget for TextInput {
     fn render_content(&self, _size: Size) -> Option<Vec<String>> {
         Some(vec![self.buf.clone()])
     }
@@ -24,9 +24,9 @@ impl Widget for Input {
     }
 }
 
-impl Input {
-    pub fn new(s: &str) -> Input {
-        Input {
+impl TextInput {
+    pub fn new(s: &str) -> TextInput {
+        TextInput {
             buf: s.to_owned(),
             index: 0,
         }
