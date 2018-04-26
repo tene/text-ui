@@ -1,9 +1,9 @@
 extern crate text_ui;
 
-use text_ui::backend::draw_pane;
-use text_ui::pane::Pane;
-use text_ui::widget::{Input, Text, VBox, Widget};
-use text_ui::{Position, Size};
+use text_ui::backend::draw_app;
+use text_ui::widget::{Input, Text, VBox};
+use text_ui::{Size};
+use text_ui::app::App;
 
 extern crate termion;
 
@@ -15,23 +15,23 @@ use termion::screen::AlternateScreen;
 
 use std::sync::{Arc, RwLock};
 
-struct App {
+struct DemoApp {
     log: Arc<RwLock<Text>>,
     input: Arc<RwLock<Input>>,
-    vbox: VBox,
+    vbox: Arc<RwLock<VBox>>,
     height: u16,
     width: u16,
 }
 
-impl App {
-    fn new() -> App {
+impl DemoApp {
+    fn new() -> DemoApp {
         let size = termion::terminal_size().unwrap();
         let log = Arc::new(RwLock::new(Text::new(vec![])));
         let input = Arc::new(RwLock::new(Input::new("")));
-        let vbox = VBox {
+        let vbox = Arc::new(RwLock::new(VBox {
             contents: vec![Box::new(log.clone()), Box::new(input.clone())],
-        };
-        App {
+        }));
+        DemoApp {
             log: log,
             input: input,
             vbox: vbox,
@@ -59,15 +59,12 @@ impl App {
     }
 }
 
-impl Widget for App {
-    fn render(&self, pos: Position, size: Size) -> Pane {
-        self.vbox.render(pos, size)
+impl App<Arc<RwLock<VBox>>> for DemoApp {
+    fn widget(&self) -> Arc<RwLock<VBox>> {
+        self.vbox.clone()
     }
-    fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
-        self.vbox.render_children(size)
-    }
-    fn render_focus(&self, size: Size) -> Option<Position> {
-        self.vbox.render_focus(size)
+    fn size(&self) -> Size {
+        Size::new(self.width, self.height)
     }
 }
 
@@ -75,11 +72,10 @@ fn main() {
     let stdin = stdin();
     let mut screen = AlternateScreen::from(stdout().into_raw_mode().unwrap());
 
-    let mut app = App::new();
+    let mut app = DemoApp::new();
     app.log_msg("Esc to exit");
 
-    let mut pane = app.render(Position::new(1, 1), Size::new(app.width, app.height));
-    draw_pane(&mut screen, &pane);
+    draw_app(&mut screen, &app);
 
     for c in stdin.events() {
         let evt = c.unwrap();
@@ -90,7 +86,6 @@ fn main() {
 
             _ => {}
         }
-        pane = app.render(Position::new(1, 1), Size::new(app.width, app.height));
-        draw_pane(&mut screen, &pane);
+        draw_app(&mut screen, &app);
     }
 }

@@ -2,11 +2,20 @@ extern crate termion;
 use termion::cursor::{Goto, Hide, Show};
 
 use pane::Pane;
+use app::App;
+use Size;
+use widget::Widget;
 use std::io::Write;
 use Position;
 
 fn goto(pos: Position) -> Goto {
     Goto(pos.x, pos.y)
+}
+
+pub fn draw_app<W: Widget>(screen: &mut impl Write, app: &impl App<W>) {
+    let size = app.size();
+    let pane = app.widget().render(Position::new(1, 1), Size::new(size.width, size.height));
+    draw_pane(screen, &pane);
 }
 
 pub fn draw_pane(screen: &mut impl Write, p: &Pane) {

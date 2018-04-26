@@ -1,10 +1,10 @@
 extern crate termion;
+pub mod app;
 pub mod backend;
 pub mod pane;
 pub mod widget;
 use std::ops::Add;
 
-// XXX Should be one-based???
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Position {
     pub x: u16,
