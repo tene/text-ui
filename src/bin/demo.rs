@@ -1,17 +1,13 @@
 extern crate text_ui;
 
-use text_ui::backend::draw_app;
-use text_ui::widget::{Input, Text, VBox};
-use text_ui::{Size};
 use text_ui::app::App;
+use text_ui::backend::run_app;
+use text_ui::widget::{Input, Text, VBox};
+use text_ui::Size;
 
 extern crate termion;
 
-use std::io::{stdin, stdout};
 use termion::event::{Event, Key};
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
 
 use std::sync::{Arc, RwLock};
 
@@ -67,26 +63,21 @@ impl App for DemoApp {
     fn size(&self) -> Size {
         Size::new(self.width, self.height)
     }
+    fn handle_event(&mut self, event: Event) -> Result<(), Option<String>> {
+        self.log_msg(&format!("{:?}", event));
+        match event {
+            Event::Key(Key::Esc) => Err(None),
+            Event::Key(k) => {
+                self.input(k);
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
 }
 
 fn main() {
-    let stdin = stdin();
-    let mut screen = AlternateScreen::from(stdout().into_raw_mode().unwrap());
-
     let mut app = DemoApp::new();
     app.log_msg("Esc to exit");
-
-    draw_app(&mut screen, &app);
-
-    for c in stdin.events() {
-        let evt = c.unwrap();
-        app.log_msg(&format!("{:?}", evt));
-        match evt {
-            Event::Key(Key::Esc) => break,
-            Event::Key(k) => app.input(k),
-
-            _ => {}
-        }
-        draw_app(&mut screen, &app);
-    }
+    run_app(&mut app);
 }

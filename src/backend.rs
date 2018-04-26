@@ -1,20 +1,43 @@
 extern crate termion;
+use std::io::{stdin, stdout};
 use termion::cursor::{Goto, Hide, Show};
+use termion::input::TermRead;
+use termion::raw::IntoRawMode;
+use termion::screen::AlternateScreen;
 
-use pane::Pane;
 use app::App;
-use Size;
-use widget::Widget;
+use pane::Pane;
 use std::io::Write;
+use widget::Widget;
 use Position;
+use Size;
 
 fn goto(pos: Position) -> Goto {
     Goto(pos.x, pos.y)
 }
 
+// TODO Next step, receive other App events over a chan
+pub fn run_app(app: &mut impl App) {
+    let stdin = stdin();
+    let mut screen = AlternateScreen::from(stdout().into_raw_mode().unwrap());
+
+    draw_app(&mut screen, app);
+
+    for c in stdin.events() {
+        let evt = c.unwrap();
+        match app.handle_event(evt) {
+            Ok(_) => {}
+            Err(_) => break,
+        }
+
+        draw_app(&mut screen, app);
+    }
+}
+
 pub fn draw_app(screen: &mut impl Write, app: &impl App) {
     let size = app.size();
-    let pane = app.widget().render(Position::new(1, 1), Size::new(size.width, size.height));
+    let pane = app.widget()
+        .render(Position::new(1, 1), Size::new(size.width, size.height));
     draw_pane(screen, &pane);
 }
 
