@@ -10,9 +10,9 @@ pub use self::text::Text;
 use pane::Pane;
 use {Position, Size};
 
-use std::sync::Arc;
 use std::ops::DerefMut;
-use std::sync::{RwLock, LockResult, RwLockWriteGuard, RwLockReadGuard};
+use std::sync::Arc;
+use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 #[derive(Debug)]
 pub struct Shared<W>(Arc<RwLock<W>>);
@@ -21,7 +21,7 @@ impl<W> Shared<W> {
     pub fn update(&mut self, f: &Fn(&mut W)) {
         match self.0.write() {
             Ok(mut w) => f(w.deref_mut()),
-            Err(_) => {},
+            Err(_) => {}
         }
     }
     pub fn write(&self) -> LockResult<RwLockWriteGuard<W>> {

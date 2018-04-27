@@ -2,7 +2,7 @@ extern crate text_ui;
 
 use text_ui::app::App;
 use text_ui::backend::run_app;
-use text_ui::widget::{Linear, Text, TextInput, Widget, Shared, shared};
+use text_ui::widget::{shared, Linear, Shared, Text, TextInput, Widget};
 use text_ui::{Event, Input, Position, Size};
 
 extern crate termion;

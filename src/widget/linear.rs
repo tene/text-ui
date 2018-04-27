@@ -1,5 +1,5 @@
 use pane::Pane;
-use widget::{Bound, BoundSize, Widget, Shared};
+use widget::{Bound, BoundSize, Shared, Widget};
 use {Position, Size};
 
 #[derive(Debug, Clone)]
