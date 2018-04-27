@@ -1,5 +1,5 @@
 use pane::Pane;
-use widget::{Bound, BoundSize, Widget};
+use widget::{Bound, BoundSize, Widget, Shared};
 use {Position, Size};
 
 #[derive(Debug, Clone)]
@@ -14,9 +14,9 @@ pub struct Linear {
 }
 
 impl Linear {
-    pub fn new(dir: Direction) -> Linear {
+    pub fn new(contents: Vec<Box<Widget>>, dir: Direction) -> Linear {
         Linear {
-            contents: vec![],
+            contents: contents,
             direction: dir,
         }
     }
@@ -26,17 +26,20 @@ impl Linear {
             Direction::Vertical => self.direction = Direction::Horizontal,
         }
     }
-    pub fn vbox(contents: Vec<Box<Widget>>) -> Linear {
+    pub fn vbox() -> Linear {
         Linear {
-            contents: contents,
+            contents: vec![],
             direction: Direction::Vertical,
         }
     }
-    pub fn hbox(contents: Vec<Box<Widget>>) -> Linear {
+    pub fn hbox() -> Linear {
         Linear {
-            contents: contents,
+            contents: vec![],
             direction: Direction::Horizontal,
         }
+    }
+    pub fn push(&mut self, w: &Shared<impl Widget + 'static>) {
+        self.contents.push(Box::new(w.clone()));
     }
 }
 

@@ -26,13 +26,14 @@ impl DemoApp {
         let log = shared(Text::new(vec![]));
         let timer = shared(Text::new(vec![]));
         let input = shared(TextInput::new(""));
-        let outputs = shared(Linear::hbox(
-                    vec![Box::new(log.clone()), Box::new(timer.clone())]));
-        let vbox = shared(Linear::vbox(vec![
-                Box::new(outputs.clone()),
-                Box::new(input.clone()),
-            ]
-        ));
+        let mut outbox = Linear::hbox();
+        outbox.push(&log);
+        outbox.push(&timer);
+        let outputs = shared(outbox);
+        let mut mainbox = Linear::vbox();
+        mainbox.push(&outputs);
+        mainbox.push(&input);
+        let vbox = shared(mainbox);
         DemoApp {
             log: log,
             input: input,
