@@ -2,7 +2,7 @@ extern crate text_ui;
 
 use text_ui::app::App;
 use text_ui::backend::run_app;
-use text_ui::widget::{Direction, Linear, Text, TextInput, Widget};
+use text_ui::widget::{Linear, Text, TextInput, Widget};
 use text_ui::{Event, Input, Position, Size};
 
 extern crate termion;
@@ -16,6 +16,7 @@ struct DemoApp {
     timer: Arc<RwLock<Text>>,
     input: Arc<RwLock<TextInput>>,
     vbox: Arc<RwLock<Linear>>,
+    outputs: Arc<RwLock<Linear>>,
     height: u16,
     width: u16,
     counter: u32,
@@ -27,21 +28,19 @@ impl DemoApp {
         let log = Arc::new(RwLock::new(Text::new(vec![])));
         let timer = Arc::new(RwLock::new(Text::new(vec![])));
         let input = Arc::new(RwLock::new(TextInput::new("")));
-        let vbox = Arc::new(RwLock::new(Linear {
-            contents: vec![
-                Box::new(Linear {
-                    contents: vec![Box::new(log.clone()), Box::new(timer.clone())],
-                    direction: Direction::Horizontal,
-                }),
+        let outputs = Arc::new(RwLock::new(Linear::hbox(
+                    vec![Box::new(log.clone()), Box::new(timer.clone())])));
+        let vbox = Arc::new(RwLock::new(Linear::vbox(vec![
+                Box::new(outputs.clone()),
                 Box::new(input.clone()),
-            ],
-            direction: Direction::Vertical,
-        }));
+            ]
+        )));
         DemoApp {
             log: log,
             input: input,
             timer: timer,
             vbox: vbox,
+            outputs: outputs,
             width: size.0,
             height: size.1,
             counter: 0,
@@ -91,6 +90,10 @@ impl App for DemoApp {
                 Input::Key(Key::Alt('d')) => {
                     let pane = self.widget().render(Position::new(1, 1), self.size());
                     self.log_msg(&format!("{:#?}", pane));
+                    Ok(())
+                }
+                Input::Key(Key::Alt('f')) => {
+                    self.outputs.write().unwrap().flip();
                     Ok(())
                 }
                 Input::Key(k) => {

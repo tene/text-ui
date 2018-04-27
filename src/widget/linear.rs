@@ -1,6 +1,7 @@
 use pane::Pane;
 use widget::{Bound, BoundSize, Widget};
 use {Position, Size};
+use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub enum Direction {
@@ -18,6 +19,24 @@ impl Linear {
         Linear {
             contents: vec![],
             direction: dir,
+        }
+    }
+    pub fn flip(&mut self) {
+        match self.direction {
+            Direction::Horizontal => self.direction = Direction::Vertical,
+            Direction::Vertical => self.direction = Direction::Horizontal,
+        }
+    }
+    pub fn vbox(contents: Vec<Box<Widget>>) -> Linear {
+        Linear {
+            contents: contents,
+            direction: Direction::Vertical,
+        }
+    }
+    pub fn hbox(contents: Vec<Box<Widget>>) -> Linear {
+        Linear {
+            contents: contents,
+            direction: Direction::Horizontal,
         }
     }
 }
