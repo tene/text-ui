@@ -1,7 +1,6 @@
 use pane::Pane;
 use widget::{Bound, BoundSize, Widget};
 use {Position, Size};
-use std::sync::{Arc, RwLock};
 
 #[derive(Debug, Clone)]
 pub enum Direction {

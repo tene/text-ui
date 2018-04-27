@@ -2,21 +2,19 @@ extern crate text_ui;
 
 use text_ui::app::App;
 use text_ui::backend::run_app;
-use text_ui::widget::{Linear, Text, TextInput, Widget};
+use text_ui::widget::{Linear, Text, TextInput, Widget, Shared, shared};
 use text_ui::{Event, Input, Position, Size};
 
 extern crate termion;
 
 use termion::event::Key;
 
-use std::sync::{Arc, RwLock};
-
 struct DemoApp {
-    log: Arc<RwLock<Text>>,
-    timer: Arc<RwLock<Text>>,
-    input: Arc<RwLock<TextInput>>,
-    vbox: Arc<RwLock<Linear>>,
-    outputs: Arc<RwLock<Linear>>,
+    log: Shared<Text>,
+    timer: Shared<Text>,
+    input: Shared<TextInput>,
+    vbox: Shared<Linear>,
+    outputs: Shared<Linear>,
     height: u16,
     width: u16,
     counter: u32,
@@ -25,16 +23,16 @@ struct DemoApp {
 impl DemoApp {
     fn new() -> DemoApp {
         let size = termion::terminal_size().unwrap();
-        let log = Arc::new(RwLock::new(Text::new(vec![])));
-        let timer = Arc::new(RwLock::new(Text::new(vec![])));
-        let input = Arc::new(RwLock::new(TextInput::new("")));
-        let outputs = Arc::new(RwLock::new(Linear::hbox(
-                    vec![Box::new(log.clone()), Box::new(timer.clone())])));
-        let vbox = Arc::new(RwLock::new(Linear::vbox(vec![
+        let log = shared(Text::new(vec![]));
+        let timer = shared(Text::new(vec![]));
+        let input = shared(TextInput::new(""));
+        let outputs = shared(Linear::hbox(
+                    vec![Box::new(log.clone()), Box::new(timer.clone())]));
+        let vbox = shared(Linear::vbox(vec![
                 Box::new(outputs.clone()),
                 Box::new(input.clone()),
             ]
-        )));
+        ));
         DemoApp {
             log: log,
             input: input,
@@ -48,22 +46,21 @@ impl DemoApp {
     }
 
     fn submit_input(&mut self) {
-        (*self.log)
+        self.log
             .write()
             .unwrap()
-            .push((*self.input).write().unwrap().submit());
+            .push(self.input.write().unwrap().submit());
     }
 
     fn log_msg(&mut self, msg: &str) {
-        let mut log = (*self.log).write().unwrap();
         let lines: Vec<String> = msg.lines().map(|l| l.to_owned()).collect();
-        log.lines.extend(lines);
+        self.log.write().unwrap().lines.extend(lines);
     }
 
     fn input(&mut self, key: Key) {
         match key {
             Key::Char('\n') => self.submit_input(),
-            k => (*self.input).write().unwrap().keypress(k),
+            k => self.input.write().unwrap().keypress(k),
         }
     }
 }
@@ -74,7 +71,7 @@ enum DemoEvent {
 }
 
 impl App for DemoApp {
-    type UI = Arc<RwLock<Linear>>;
+    type UI = Shared<Linear>;
     type MyEvent = DemoEvent;
     fn widget(&self) -> Self::UI {
         self.vbox.clone()
@@ -103,7 +100,7 @@ impl App for DemoApp {
                 _ => Ok(()),
             },
             Event::AppEvent(_) => {
-                (*self.timer)
+                self.timer
                     .write()
                     .unwrap()
                     .push(format!("{}", self.counter));
