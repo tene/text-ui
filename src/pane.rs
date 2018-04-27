@@ -1,5 +1,6 @@
 use Position;
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Pane {
     pub position: Position,
     pub content: Option<Vec<String>>,
@@ -14,6 +15,15 @@ impl Pane {
             content: Some(content),
             focus: None,
             children: None,
+        }
+    }
+
+    pub fn offset(self, pos: Position) -> Self {
+        Pane {
+            position: self.position + pos,
+            content: self.content,
+            focus: self.focus.map(|f| f + pos),
+            children: self.children,
         }
     }
 }

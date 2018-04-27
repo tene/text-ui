@@ -3,7 +3,7 @@ use Size;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Text {
-    lines: Vec<String>,
+    pub lines: Vec<String>,
 }
 
 impl Widget for Text {

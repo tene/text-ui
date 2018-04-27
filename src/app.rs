@@ -1,6 +1,6 @@
 use widget::Widget;
-use Size;
 use Event;
+use Size;
 
 pub trait App {
     type UI: Widget;

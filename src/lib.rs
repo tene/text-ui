@@ -8,6 +8,7 @@ use std::ops::Add;
 pub use termion::event::Event as Input;
 
 // XXX Ugh, naming?!?!
+#[derive(Debug, PartialEq, Clone)]
 pub enum Event<A> {
     InputEvent(Input),
     AppEvent(A),

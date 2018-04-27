@@ -1,38 +1,50 @@
 extern crate text_ui;
 
 use text_ui::app::App;
-use text_ui::backend::{run_app};
-use text_ui::widget::{TextInput, Text, VBox};
-use text_ui::{Event, Size, Input};
+use text_ui::backend::run_app;
+use text_ui::widget::{Direction, Linear, Text, TextInput, Widget};
+use text_ui::{Event, Input, Position, Size};
 
 extern crate termion;
 
-use termion::event::{Key};
+use termion::event::Key;
 
 use std::sync::{Arc, RwLock};
 
 struct DemoApp {
     log: Arc<RwLock<Text>>,
+    timer: Arc<RwLock<Text>>,
     input: Arc<RwLock<TextInput>>,
-    vbox: Arc<RwLock<VBox>>,
+    vbox: Arc<RwLock<Linear>>,
     height: u16,
     width: u16,
+    counter: u32,
 }
 
 impl DemoApp {
     fn new() -> DemoApp {
         let size = termion::terminal_size().unwrap();
         let log = Arc::new(RwLock::new(Text::new(vec![])));
+        let timer = Arc::new(RwLock::new(Text::new(vec![])));
         let input = Arc::new(RwLock::new(TextInput::new("")));
-        let vbox = Arc::new(RwLock::new(VBox {
-            contents: vec![Box::new(log.clone()), Box::new(input.clone())],
+        let vbox = Arc::new(RwLock::new(Linear {
+            contents: vec![
+                Box::new(Linear {
+                    contents: vec![Box::new(log.clone()), Box::new(timer.clone())],
+                    direction: Direction::Horizontal,
+                }),
+                Box::new(input.clone()),
+            ],
+            direction: Direction::Vertical,
         }));
         DemoApp {
             log: log,
             input: input,
+            timer: timer,
             vbox: vbox,
             width: size.0,
             height: size.1,
+            counter: 0,
         }
     }
 
@@ -44,7 +56,9 @@ impl DemoApp {
     }
 
     fn log_msg(&mut self, msg: &str) {
-        (*self.log).write().unwrap().push(msg.to_owned());
+        let mut log = (*self.log).write().unwrap();
+        let lines: Vec<String> = msg.lines().map(|l| l.to_owned()).collect();
+        log.lines.extend(lines);
     }
 
     fn input(&mut self, key: Key) {
@@ -61,7 +75,7 @@ enum DemoEvent {
 }
 
 impl App for DemoApp {
-    type UI = Arc<RwLock<VBox>>;
+    type UI = Arc<RwLock<Linear>>;
     type MyEvent = DemoEvent;
     fn widget(&self) -> Self::UI {
         self.vbox.clone()
@@ -70,20 +84,27 @@ impl App for DemoApp {
         Size::new(self.width, self.height)
     }
     fn handle_event(&mut self, event: Event<Self::MyEvent>) -> Result<(), Option<String>> {
+        self.log_msg(&format!("{:?}", event));
         match event {
-            Event::InputEvent(i) => {
-                self.log_msg(&format!("{:?}", i));
-                match i {
-                    Input::Key(Key::Esc) => Err(None),
-                    Input::Key(k) => {
-                        self.input(k);
-                        Ok(())
-                    }
-                    _ => Ok(()),
+            Event::InputEvent(i) => match i {
+                Input::Key(Key::Esc) => Err(None),
+                Input::Key(Key::Alt('d')) => {
+                    let pane = self.widget().render(Position::new(1, 1), self.size());
+                    self.log_msg(&format!("{:#?}", pane));
+                    Ok(())
                 }
+                Input::Key(k) => {
+                    self.input(k);
+                    Ok(())
+                }
+                _ => Ok(()),
             },
-            Event::AppEvent(e) => {
-                self.log_msg(&format!("{:?}", e));
+            Event::AppEvent(_) => {
+                (*self.timer)
+                    .write()
+                    .unwrap()
+                    .push(format!("{}", self.counter));
+                self.counter += 1;
                 Ok(())
             }
         }
@@ -92,6 +113,10 @@ impl App for DemoApp {
 
 fn main() {
     let mut app = DemoApp::new();
+    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
+    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
+    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
+    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
     app.log_msg("Esc to exit");
     run_app(&mut app);
 }
