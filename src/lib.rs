@@ -23,7 +23,7 @@ pub struct Position {
 
 impl Position {
     pub fn new(x: u16, y: u16) -> Position {
-        Position { x: x, y: y }
+        Position { x, y }
     }
     pub fn offset(self, x: u16, y: u16) -> Position {
         Position {
@@ -52,10 +52,7 @@ pub struct Size {
 
 impl Size {
     pub fn new(width: u16, height: u16) -> Size {
-        Size {
-            width: width,
-            height: height,
-        }
+        Size { width, height }
     }
     pub fn offset(self, width: u16, height: u16) -> Size {
         Size {

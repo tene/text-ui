@@ -30,11 +30,11 @@ impl DemoApp {
         mainbox.push(&input);
         let vbox = shared(mainbox);
         DemoApp {
-            log: log,
-            input: input,
-            timer: timer,
-            vbox: vbox,
-            outputs: outputs,
+            log,
+            input,
+            timer,
+            vbox,
+            outputs,
             counter: 0,
         }
     }

@@ -19,9 +19,8 @@ pub struct Shared<W>(Arc<RwLock<W>>);
 
 impl<W> Shared<W> {
     pub fn update(&mut self, f: &Fn(&mut W)) {
-        match self.0.write() {
-            Ok(mut w) => f(w.deref_mut()),
-            Err(_) => {}
+        if let Ok(mut w) = self.0.write() {
+            f(w.deref_mut())
         }
     }
     pub fn write(&self) -> LockResult<RwLockWriteGuard<W>> {
@@ -55,15 +54,15 @@ pub struct BoundSize {
 }
 
 pub trait Widget {
-    fn render(&self, pos: Position, size: Size) -> Pane {
+    fn render(&self, position: Position, size: Size) -> Pane {
         let content = self.render_content(size);
-        let focus = self.render_focus(size).map(|f| f + pos);
+        let focus = self.render_focus(size).map(|f| f + position);
         let children = self.render_children(size);
         Pane {
-            position: pos,
-            content: content,
-            focus: focus,
-            children: children,
+            position,
+            content,
+            focus,
+            children,
         }
     }
     fn render_content(&self, Size) -> Option<Vec<String>> {

@@ -34,10 +34,11 @@ where
     pub fn new() -> Self {
         let (width, height) = termion::terminal_size().unwrap();
         let (sender, receiver) = channel();
+        let size = Size::new(width, height);
         Backend {
-            sender: sender,
-            receiver: receiver,
-            size: Size::new(width, height),
+            sender,
+            receiver,
+            size,
         }
     }
     pub fn run_app(&mut self, app: &mut A) {
@@ -65,6 +66,12 @@ where
             }
             draw_app(&mut screen, app, self.size);
         }
+    }
+}
+
+impl<A: App + 'static> Default for Backend<A> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

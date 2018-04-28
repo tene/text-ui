@@ -14,10 +14,10 @@ pub struct Linear {
 }
 
 impl Linear {
-    pub fn new(contents: Vec<Box<Widget>>, dir: Direction) -> Linear {
+    pub fn new(contents: Vec<Box<Widget>>, direction: Direction) -> Linear {
         Linear {
-            contents: contents,
-            direction: dir,
+            contents,
+            direction,
         }
     }
     pub fn flip(&mut self) {
@@ -46,10 +46,10 @@ impl Linear {
 fn layout_bounds_proportional(bounds: Vec<Bound>, goal: u16) -> Vec<u16> {
     let (fixed_size, free_count) = coalesce_bounds(&bounds);
     let free_size = goal - fixed_size;
-    let step = (free_size as f32 / free_count as f32).ceil() as u16;
+    let step = (f32::from(free_size) / free_count as f32).ceil() as u16;
     let mut pool = free_size;
     let mut sizes = vec![];
-    for item in bounds.iter() {
+    for item in &bounds {
         match item {
             Bound::Fixed(n) => sizes.push(*n),
             Bound::AtLeast(n) => {
