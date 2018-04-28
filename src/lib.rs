@@ -6,6 +6,7 @@ pub mod widget;
 use std::ops::Add;
 
 pub use termion::event::Event as Input;
+pub use termion::event::Key;
 
 // XXX Ugh, naming?!?!
 #[derive(Debug, PartialEq, Clone)]

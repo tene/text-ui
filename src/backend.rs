@@ -14,6 +14,7 @@ use pane::Pane;
 use widget::Widget;
 use Event;
 use Position;
+use Size;
 
 fn goto(pos: Position) -> Goto {
     Goto(pos.x, pos.y)
@@ -22,6 +23,7 @@ fn goto(pos: Position) -> Goto {
 pub struct Backend<A: App> {
     pub sender: Sender<Event<A::MyEvent>>,
     receiver: Receiver<Event<A::MyEvent>>,
+    size: Size,
 }
 
 impl<A> Backend<A>
@@ -30,10 +32,12 @@ where
     A::MyEvent: 'static,
 {
     pub fn new() -> Self {
+        let (width, height) = termion::terminal_size().unwrap();
         let (sender, receiver) = channel();
         Backend {
             sender: sender,
             receiver: receiver,
+            size: Size::new(width, height),
         }
     }
     pub fn run_app(&mut self, app: &mut A) {
@@ -41,7 +45,7 @@ where
         let mut screen =
             MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
 
-        draw_app(&mut screen, app);
+        draw_app(&mut screen, app, self.size);
 
         let inputsender = self.sender.clone();
         thread::spawn(move || {
@@ -59,20 +63,19 @@ where
                 Ok(_) => {}
                 Err(_) => break,
             }
-            draw_app(&mut screen, app);
+            draw_app(&mut screen, app, self.size);
         }
     }
 }
 
-fn render_app(app: &impl App) -> Pane {
-    let size = app.size();
+fn render_app(app: &impl App, size: Size) -> Pane {
     let pos = Position::new(1, 1);
     app.widget().render(pos, size)
 }
 
-fn draw_app(screen: &mut impl Write, app: &impl App) {
+fn draw_app(screen: &mut impl Write, app: &impl App, size: Size) {
     let pos = Position::new(1, 1);
-    let pane = render_app(app);
+    let pane = render_app(app, size);
     draw_pane(screen, pos, &pane);
 }
 
