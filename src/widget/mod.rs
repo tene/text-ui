@@ -53,6 +53,10 @@ pub struct BoundSize {
     pub height: Bound,
 }
 
+impl BoundSize {
+    fn split(&self) -> (Bound, Bound) { (self.width, self.height) }
+}
+
 pub trait Widget {
     fn render(&self, position: Position, size: Size) -> Pane {
         let content = self.render_content(size);

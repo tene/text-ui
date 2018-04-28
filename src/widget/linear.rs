@@ -69,42 +69,39 @@ fn layout_bounds_proportional(bounds: &[Bound], goal: u16) -> Vec<u16> {
 impl Widget for Linear {
     fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
         let mut counter = 0;
-        let children: Vec<Pane> = match &self.direction {
-            Direction::Vertical => layout_bounds_proportional(
-                &self.contents
-                    .iter()
-                    .map(|w| w.render_bounds().height)
-                    .collect::<Vec<Bound>>(),
-                size.height,
-            ).into_iter()
-                .zip(self.contents.iter())
-                .map(|(itemsize, item)| {
-                    let tmp = counter;
-                    counter += itemsize;
-                    item.render(Position::new(0, tmp), Size::new(size.width, itemsize))
-                })
-                .collect(),
-            Direction::Horizontal => layout_bounds_proportional(
-                &self.contents
-                    .iter()
-                    .map(|w| w.render_bounds().width)
-                    .collect::<Vec<Bound>>(),
-                size.width,
-            ).into_iter()
-                .zip(self.contents.iter())
-                .map(|(itemsize, item)| {
-                    let tmp = counter;
-                    counter += itemsize;
-                    item.render(Position::new(tmp, 0), Size::new(itemsize, size.height))
-                })
-                .collect(),
+        let get_bound = |w: &Box<Widget>| match &self.direction {
+            Direction::Vertical => w.render_bounds().height,
+            Direction::Horizontal => w.render_bounds().width,
         };
+        let total_size = match &self.direction {
+            Direction::Vertical => size.height,
+            Direction::Horizontal => size.width,
+        };
+        let build_pane = |item: &Box<Widget>, offset, itemsize| match &self.direction {
+            Direction::Vertical => {
+                item.render(Position::new(0, offset), Size::new(size.width, itemsize))
+            }
+            Direction::Horizontal => {
+                item.render(Position::new(offset, 0), Size::new(itemsize, size.height))
+            }
+        };
+        let children: Vec<Pane> = layout_bounds_proportional(
+            &self.contents.iter().map(get_bound).collect::<Vec<Bound>>(),
+            total_size,
+        ).into_iter()
+            .zip(self.contents.iter())
+            .map(|(itemsize, item)| {
+                let tmp = counter;
+                counter += itemsize;
+                build_pane(item, tmp, itemsize)
+            })
+            .collect();
         Some(children)
     }
     fn render_bounds(&self) -> BoundSize {
-        let bounds: Vec<BoundSize> = self.contents.iter().map(|w| w.render_bounds()).collect();
-        let (width, _) = coalesce_bounds(&bounds.iter().map(|b| b.width).collect::<Vec<Bound>>());
-        let (height, _) = coalesce_bounds(&bounds.iter().map(|b| b.height).collect::<Vec<Bound>>());
+        let (width_iter, height_iter): (Vec<Bound>, Vec<Bound>)  = self.contents.iter().map(|w| w.render_bounds().split()).unzip();
+        let (width, _) = coalesce_bounds(&width_iter);
+        let (height, _) = coalesce_bounds(&height_iter);
         BoundSize {
             width: Bound::AtLeast(width),
             height: Bound::AtLeast(height),
