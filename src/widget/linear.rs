@@ -69,31 +69,31 @@ fn layout_bounds_proportional(bounds: &[Bound], goal: u16) -> Vec<u16> {
 impl Widget for Linear {
     fn render_children(&self, size: Size) -> Option<Vec<Pane>> {
         let mut counter = 0;
-        let get_bound = |w: &Box<Widget>| match &self.direction {
-            Direction::Vertical => w.render_bounds().height,
-            Direction::Horizontal => w.render_bounds().width,
+        let get_bound = |b: BoundSize| match &self.direction {
+            Direction::Vertical => b.height,
+            Direction::Horizontal => b.width,
         };
         let total_size = match &self.direction {
             Direction::Vertical => size.height,
             Direction::Horizontal => size.width,
         };
-        let build_pane = |item: &Box<Widget>, offset, itemsize| match &self.direction {
-            Direction::Vertical => {
-                item.render(Position::new(0, offset), Size::new(size.width, itemsize))
-            }
-            Direction::Horizontal => {
-                item.render(Position::new(offset, 0), Size::new(itemsize, size.height))
-            }
+        let build_pos = |offset| match &self.direction {
+            Direction::Vertical => Position::new(0, offset),
+            Direction::Horizontal => Position::new(offset, 0),
+        };
+        let build_size = |itemsize| match &self.direction {
+            Direction::Vertical => Size::new(size.width, itemsize),
+            Direction::Horizontal => Size::new(itemsize, size.height),
         };
         let children: Vec<Pane> = layout_bounds_proportional(
-            &self.contents.iter().map(get_bound).collect::<Vec<Bound>>(),
+            &self.contents.iter().map(|w| get_bound(w.render_bounds())).collect::<Vec<Bound>>(),
             total_size,
         ).into_iter()
             .zip(self.contents.iter())
             .map(|(itemsize, item)| {
                 let tmp = counter;
                 counter += itemsize;
-                build_pane(item, tmp, itemsize)
+                item.render(build_pos(tmp), build_size(itemsize))
             })
             .collect();
         Some(children)
