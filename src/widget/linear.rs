@@ -43,13 +43,13 @@ impl Linear {
     }
 }
 
-fn layout_bounds_proportional(bounds: Vec<Bound>, goal: u16) -> Vec<u16> {
-    let (fixed_size, free_count) = coalesce_bounds(&bounds);
+fn layout_bounds_proportional(bounds: &[Bound], goal: u16) -> Vec<u16> {
+    let (fixed_size, free_count) = coalesce_bounds(bounds);
     let free_size = goal - fixed_size;
     let step = (f32::from(free_size) / free_count as f32).ceil() as u16;
     let mut pool = free_size;
     let mut sizes = vec![];
-    for item in &bounds {
+    for item in bounds {
         match item {
             Bound::Fixed(n) => sizes.push(*n),
             Bound::AtLeast(n) => {
@@ -71,10 +71,10 @@ impl Widget for Linear {
         let mut counter = 0;
         let children: Vec<Pane> = match &self.direction {
             Direction::Vertical => layout_bounds_proportional(
-                self.contents
+                &self.contents
                     .iter()
                     .map(|w| w.render_bounds().height)
-                    .collect(),
+                    .collect::<Vec<Bound>>(),
                 size.height,
             ).into_iter()
                 .zip(self.contents.iter())
@@ -85,10 +85,10 @@ impl Widget for Linear {
                 })
                 .collect(),
             Direction::Horizontal => layout_bounds_proportional(
-                self.contents
+                &self.contents
                     .iter()
                     .map(|w| w.render_bounds().width)
-                    .collect(),
+                    .collect::<Vec<Bound>>(),
                 size.width,
             ).into_iter()
                 .zip(self.contents.iter())
@@ -103,8 +103,8 @@ impl Widget for Linear {
     }
     fn render_bounds(&self) -> BoundSize {
         let bounds: Vec<BoundSize> = self.contents.iter().map(|w| w.render_bounds()).collect();
-        let (width, _) = coalesce_bounds(&bounds.iter().map(|b| b.width).collect());
-        let (height, _) = coalesce_bounds(&bounds.iter().map(|b| b.height).collect());
+        let (width, _) = coalesce_bounds(&bounds.iter().map(|b| b.width).collect::<Vec<Bound>>());
+        let (height, _) = coalesce_bounds(&bounds.iter().map(|b| b.height).collect::<Vec<Bound>>());
         BoundSize {
             width: Bound::AtLeast(width),
             height: Bound::AtLeast(height),
@@ -112,7 +112,7 @@ impl Widget for Linear {
     }
 }
 
-fn coalesce_bounds(bounds: &Vec<Bound>) -> (u16, usize) {
+fn coalesce_bounds(bounds: &[Bound]) -> (u16, usize) {
     let mut fixed: u16 = 0;
     let mut free: usize = 0;
     for bound in bounds {
