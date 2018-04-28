@@ -1,7 +1,7 @@
 extern crate termion;
 use std::io::{stdin, stdout};
 use termion::cursor::{Goto, Hide, Show};
-use termion::input::TermRead;
+use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
 
@@ -19,7 +19,7 @@ fn goto(pos: Position) -> Goto {
 // TODO Next step, receive other App events over a chan
 pub fn run_app(app: &mut impl App) {
     let stdin = stdin();
-    let mut screen = AlternateScreen::from(stdout().into_raw_mode().unwrap());
+    let mut screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
 
     draw_app(&mut screen, app);
 
