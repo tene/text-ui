@@ -1,13 +1,14 @@
 extern crate text_ui;
-
 use text_ui::app::App;
-use text_ui::backend::run_app;
+use text_ui::backend::Backend;
 use text_ui::widget::{shared, Linear, Shared, Text, TextInput, Widget};
 use text_ui::{Event, Input, Position, Size};
 
 extern crate termion;
-
 use termion::event::Key;
+
+use std::thread;
+use std::time::Duration;
 
 struct DemoApp {
     log: Shared<Text>,
@@ -113,11 +114,13 @@ impl App for DemoApp {
 }
 
 fn main() {
+    let mut be = Backend::new();
+    let myevents = be.sender.clone();
+    thread::spawn(move || loop {
+        myevents.send(Event::AppEvent(DemoEvent::Tick)).unwrap();
+        thread::sleep(Duration::from_millis(500));
+    });
     let mut app = DemoApp::new();
-    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
-    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
-    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
-    app.handle_event(Event::AppEvent(DemoEvent::Tick)).unwrap();
     app.log_msg("Esc to exit");
-    run_app(&mut app);
+    be.run_app(&mut app);
 }

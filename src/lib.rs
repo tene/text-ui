@@ -9,7 +9,7 @@ pub use termion::event::Event as Input;
 
 // XXX Ugh, naming?!?!
 #[derive(Debug, PartialEq, Clone)]
-pub enum Event<A> {
+pub enum Event<A: Send> {
     InputEvent(Input),
     AppEvent(A),
 }

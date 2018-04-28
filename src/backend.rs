@@ -1,5 +1,9 @@
 extern crate termion;
+use std::io::Write;
 use std::io::{stdin, stdout};
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
+
 use termion::cursor::{Goto, Hide, Show};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
@@ -7,7 +11,6 @@ use termion::screen::AlternateScreen;
 
 use app::App;
 use pane::Pane;
-use std::io::Write;
 use widget::Widget;
 use Event;
 use Position;
@@ -16,37 +19,64 @@ fn goto(pos: Position) -> Goto {
     Goto(pos.x, pos.y)
 }
 
-// TODO Next step, receive other App events over a chan
-pub fn run_app(app: &mut impl App) {
-    let stdin = stdin();
-    let mut screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
+pub struct Backend<A: App> {
+    pub sender: Sender<Event<A::MyEvent>>,
+    receiver: Receiver<Event<A::MyEvent>>,
+}
 
-    draw_app(&mut screen, app);
-
-    for c in stdin.events() {
-        let evt = c.unwrap();
-        match app.handle_event(Event::InputEvent(evt)) {
-            Ok(_) => {}
-            Err(_) => break,
+impl<A> Backend<A>
+where
+    A: App,
+    A::MyEvent: 'static,
+{
+    pub fn new() -> Self {
+        let (sender, receiver) = channel();
+        Backend {
+            sender: sender,
+            receiver: receiver,
         }
+    }
+    pub fn run_app(&mut self, app: &mut A) {
+        let stdin = stdin();
+        let mut screen =
+            MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
 
         draw_app(&mut screen, app);
+
+        let inputsender = self.sender.clone();
+        thread::spawn(move || {
+            for c in stdin.events() {
+                let evt = c.unwrap();
+                match inputsender.send(Event::InputEvent(evt)) {
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+        });
+
+        for e in self.receiver.iter() {
+            match app.handle_event(e) {
+                Ok(_) => {}
+                Err(_) => break,
+            }
+            draw_app(&mut screen, app);
+        }
     }
 }
 
-pub fn render_app(app: &impl App) -> Pane {
+fn render_app(app: &impl App) -> Pane {
     let size = app.size();
     let pos = Position::new(1, 1);
     app.widget().render(pos, size)
 }
 
-pub fn draw_app(screen: &mut impl Write, app: &impl App) {
+fn draw_app(screen: &mut impl Write, app: &impl App) {
     let pos = Position::new(1, 1);
     let pane = render_app(app);
     draw_pane(screen, pos, &pane);
 }
 
-pub fn draw_pane(screen: &mut impl Write, pos: Position, pane: &Pane) {
+fn draw_pane(screen: &mut impl Write, pos: Position, pane: &Pane) {
     write!(screen, "{}", termion::clear::All).unwrap();
     let focus = draw_pane_helper(screen, pos, pane);
     match focus {
