@@ -1,7 +1,7 @@
 extern crate text_ui;
 use text_ui::app::App;
 use text_ui::backend::Backend;
-use text_ui::widget::{shared, Linear, Shared, Text, TextInput};
+use text_ui::widget::{shared, Linear, Readline, Shared, Text, TextInput};
 use text_ui::{Event, Input, Key};
 
 use std::thread;
@@ -11,6 +11,7 @@ struct DemoApp {
     log: Shared<Text>,
     timer: Shared<Text>,
     input: Shared<TextInput>,
+    readline: Shared<Readline>,
     vbox: Shared<Linear>,
     outputs: Shared<Linear>,
     counter: u32,
@@ -20,6 +21,10 @@ impl DemoApp {
     fn new() -> DemoApp {
         let log = shared(Text::new(vec![]));
         let timer = shared(Text::new(vec![]));
+        let mut rl = Readline::new();
+        rl.width(80);
+        rl.update("test1234test1234", 10);
+        let readline = shared(rl);
         let input = shared(TextInput::new(""));
         let mut outbox = Linear::hbox();
         outbox.push(&log);
@@ -27,12 +32,14 @@ impl DemoApp {
         let outputs = shared(outbox);
         let mut mainbox = Linear::vbox();
         mainbox.push(&outputs);
+        mainbox.push(&readline);
         mainbox.push(&input);
         let vbox = shared(mainbox);
         DemoApp {
             log,
             input,
             timer,
+            readline,
             vbox,
             outputs,
             counter: 0,

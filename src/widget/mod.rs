@@ -1,10 +1,12 @@
 pub mod input;
 pub mod linear;
+pub mod readline;
 pub mod text;
 
 pub use self::input::TextInput;
 pub use self::linear::Direction;
 pub use self::linear::Linear;
+pub use self::readline::Readline;
 pub use self::text::Text;
 
 use pane::Pane;
@@ -54,7 +56,9 @@ pub struct BoundSize {
 }
 
 impl BoundSize {
-    fn split(&self) -> (Bound, Bound) { (self.width, self.height) }
+    fn split(&self) -> (Bound, Bound) {
+        (self.width, self.height)
+    }
 }
 
 pub trait Widget {

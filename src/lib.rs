@@ -1,12 +1,18 @@
+#[macro_use]
+extern crate log;
+
+extern crate unicode_segmentation;
+
 extern crate termion;
+pub use termion::event::Event as Input;
+pub use termion::event::Key;
+
+use std::ops::Add;
+
 pub mod app;
 pub mod backend;
 pub mod pane;
 pub mod widget;
-use std::ops::Add;
-
-pub use termion::event::Event as Input;
-pub use termion::event::Key;
 
 // XXX Ugh, naming?!?!
 #[derive(Debug, PartialEq, Clone)]
@@ -15,7 +21,7 @@ pub enum Event<A: Send> {
     AppEvent(A),
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Default)]
 pub struct Position {
     pub x: u16,
     pub y: u16,

@@ -86,7 +86,10 @@ impl Widget for Linear {
             Direction::Horizontal => Size::new(itemsize, size.height),
         };
         let children: Vec<Pane> = layout_bounds_proportional(
-            &self.contents.iter().map(|w| get_bound(w.render_bounds())).collect::<Vec<Bound>>(),
+            &self.contents
+                .iter()
+                .map(|w| get_bound(w.render_bounds()))
+                .collect::<Vec<Bound>>(),
             total_size,
         ).into_iter()
             .zip(self.contents.iter())
@@ -99,7 +102,10 @@ impl Widget for Linear {
         Some(children)
     }
     fn render_bounds(&self) -> BoundSize {
-        let (width_iter, height_iter): (Vec<Bound>, Vec<Bound>)  = self.contents.iter().map(|w| w.render_bounds().split()).unzip();
+        let (width_iter, height_iter): (Vec<Bound>, Vec<Bound>) = self.contents
+            .iter()
+            .map(|w| w.render_bounds().split())
+            .unzip();
         let (width, _) = coalesce_bounds(&width_iter);
         let (height, _) = coalesce_bounds(&height_iter);
         BoundSize {
