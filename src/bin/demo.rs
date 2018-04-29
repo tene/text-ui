@@ -1,7 +1,7 @@
 extern crate text_ui;
 use text_ui::app::App;
 use text_ui::backend::Backend;
-use text_ui::widget::{shared, Linear, Readline, Shared, Text, TextInput};
+use text_ui::widget::{shared, Linear, Readline, Shared, Text};
 use text_ui::{Event, Input, Key};
 
 use std::thread;
@@ -9,40 +9,54 @@ use std::time::Duration;
 
 struct DemoApp {
     log: Shared<Text>,
-    timer: Shared<Text>,
-    input: Shared<TextInput>,
+    side: Shared<Text>,
     readline: Shared<Readline>,
     vbox: Shared<Linear>,
     outputs: Shared<Linear>,
-    counter: u32,
+    show_side: bool,
 }
 
 impl DemoApp {
     fn new() -> DemoApp {
         let log = shared(Text::new(vec![]));
-        let timer = shared(Text::new(vec![]));
+        let side = shared(Text::new(vec![]));
         let mut rl = Readline::new();
         rl.width(80);
         rl.update("test1234test1234", 10);
         let readline = shared(rl);
-        let input = shared(TextInput::new(""));
         let mut outbox = Linear::hbox();
         outbox.push(&log);
-        outbox.push(&timer);
+        outbox.push(&side);
         let outputs = shared(outbox);
         let mut mainbox = Linear::vbox();
         mainbox.push(&outputs);
         mainbox.push(&readline);
-        mainbox.push(&input);
+        //mainbox.push(&input);
         let vbox = shared(mainbox);
         DemoApp {
             log,
-            input,
-            timer,
+            side,
             readline,
             vbox,
             outputs,
-            counter: 0,
+            show_side: true,
+        }
+    }
+
+    fn toggle_side(&mut self) {
+        let mut outputs = self.outputs.write().unwrap();
+        match self.show_side {
+            true => {
+                self.show_side = false;
+                outputs.contents.truncate(0);
+                outputs.push(&self.log);
+            }
+            false => {
+                self.show_side = true;
+                outputs.contents.truncate(0);
+                outputs.push(&self.log);
+                outputs.push(&self.side);
+            }
         }
     }
 
@@ -50,7 +64,7 @@ impl DemoApp {
         self.log
             .write()
             .unwrap()
-            .push(self.input.write().unwrap().submit());
+            .push(self.readline.write().unwrap().finalize());
     }
 
     fn log_msg(&mut self, msg: &str) {
@@ -61,7 +75,10 @@ impl DemoApp {
     fn input(&mut self, key: Key) {
         match key {
             Key::Char('\n') => self.submit_input(),
-            k => self.input.write().unwrap().keypress(k),
+            k => {
+                let mut rl = self.readline.write().unwrap();
+                rl.process_key(k);
+            },
         }
     }
 }
@@ -78,26 +95,33 @@ impl App for DemoApp {
         self.vbox.clone()
     }
     fn handle_event(&mut self, event: Event<Self::MyEvent>) -> Result<(), Option<String>> {
-        self.log_msg(&format!("{:?}", event));
         match event {
-            Event::InputEvent(i) => match i {
-                Input::Key(Key::Esc) => Err(None),
-                Input::Key(Key::Alt('f')) => {
-                    self.outputs.write().unwrap().flip();
-                    Ok(())
+            Event::InputEvent(i) => {
+                match i {
+                    Input::Key(Key::Esc) => Err(None),
+                    Input::Key(Key::Alt('t')) => {
+                        self.toggle_side();
+                        Ok(())
+                    }
+                    Input::Key(k) => {
+                        self.input(k);
+                        Ok(())
+                    }
+                    _ => {
+                        self.log_msg(&format!("{:?}", i));
+                        Ok(())
+                    },
                 }
-                Input::Key(k) => {
-                    self.input(k);
-                    Ok(())
-                }
-                _ => Ok(()),
             },
             Event::AppEvent(_) => {
-                self.timer
+                let dbg = {
+                    let rl = self.readline.read().unwrap();
+                    format!("{:#?}\n{:#?}", rl.editor, rl.state)
+                };
+                self.side
                     .write()
                     .unwrap()
-                    .push(format!("{}", self.counter));
-                self.counter += 1;
+                    .set(&dbg);
                 Ok(())
             }
         }

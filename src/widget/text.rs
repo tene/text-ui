@@ -25,4 +25,7 @@ impl Text {
     pub fn push(&mut self, s: String) {
         self.lines.push(s);
     }
+    pub fn set(&mut self, s: &str) {
+        self.lines = s.lines().map(|l| l.to_owned()).collect();
+    }
 }
