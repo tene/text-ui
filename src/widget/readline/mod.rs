@@ -4,25 +4,26 @@ use {Position, Size};
 
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt;
 use std::rc::Rc;
 
 mod config;
 mod consts;
-mod state;
 mod edit;
 mod history;
 mod keymap;
 mod kill_ring;
 mod line_buffer;
 mod process;
+mod state;
 mod undo;
 
-pub use self::state::State;
-pub use self::edit::Editor;
-use self::keymap::{InputState,Cmd};
-use self::consts::KeyPress;
 use self::config::Config;
+use self::consts::KeyPress;
+pub use self::edit::Editor;
+use self::keymap::{Cmd, InputState};
 use self::process::{process_char, process_command};
+pub use self::state::State;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Offset {
@@ -40,6 +41,16 @@ pub struct Readline {
     pub state: State,
     pub editor: Editor,
     pub input_state: InputState,
+}
+
+impl fmt::Debug for Readline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Readline")
+            .field("input_state", &self.input_state)
+            .field("state", &self.state)
+            .field("editor", &self.editor)
+            .finish()
+    }
 }
 
 impl Readline {
@@ -70,7 +81,12 @@ impl Readline {
 
     pub fn process_keypress(&mut self, kp: KeyPress) {
         let cmd = self.input_state.next_cmd(kp, &mut self.state, true);
-        process_command(&mut self.state, &mut self.editor, cmd, &mut self.input_state);
+        process_command(
+            &mut self.state,
+            &mut self.editor,
+            cmd,
+            &mut self.input_state,
+        );
     }
 
     pub fn finalize(&mut self) -> String {

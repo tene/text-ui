@@ -83,6 +83,7 @@ fn render_app(app: &impl App, size: Size) -> Pane {
 fn draw_app(screen: &mut impl Write, app: &impl App, size: Size) {
     let pos = Position::new(1, 1);
     let pane = render_app(app, size);
+    //eprintln!("{:#?}{:?}", pane, size);
     draw_pane(screen, pos, &pane);
 }
 
@@ -111,7 +112,7 @@ fn draw_pane_helper(screen: &mut impl Write, pos: Position, pane: &Pane) -> Opti
     let mut child_focus = None;
     match &pane.children {
         Some(children) => for child in children {
-            let f = draw_pane_helper(screen, pos, child);
+            let f = draw_pane_helper(screen, pos + pane.position, child);
             if f.is_some() {
                 child_focus = f
             };

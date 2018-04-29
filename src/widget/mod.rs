@@ -1,8 +1,10 @@
+pub mod debug;
 pub mod input;
 pub mod linear;
 pub mod readline;
 pub mod text;
 
+pub use self::debug::DbgDump;
 pub use self::input::TextInput;
 pub use self::linear::Direction;
 pub use self::linear::Linear;

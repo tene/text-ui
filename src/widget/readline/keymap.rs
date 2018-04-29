@@ -1,6 +1,7 @@
 //! Bindings from keys to command for Emacs and Vi modes
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::fmt;
 use std::rc::Rc;
 
 use super::config::Config;
@@ -249,6 +250,14 @@ pub struct InputState {
     last_cmd: Cmd, // vi only
     consecutive_insert: bool,
     last_char_search: Option<CharSearch>, // vi only
+}
+
+impl fmt::Debug for InputState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("InputState")
+            .field("mode", &self.mode)
+            .finish()
+    }
 }
 
 pub trait Refresher {

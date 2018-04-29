@@ -1,13 +1,13 @@
-use std::rc::Rc;
-use std::collections::HashMap;
 use std::cell::RefCell;
+use std::collections::HashMap;
+use std::fmt;
 use std::io;
 use std::path::Path;
-use std::fmt;
+use std::rc::Rc;
 
-use super::history::History;
 use super::config::Config;
 use super::consts::KeyPress;
+use super::history::History;
 use super::keymap::Cmd;
 use super::kill_ring::KillRing;
 

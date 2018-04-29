@@ -45,7 +45,7 @@ impl Linear {
 
 fn layout_bounds_proportional(bounds: &[Bound], goal: u16) -> Vec<u16> {
     let (fixed_size, free_count) = coalesce_bounds(bounds);
-    let free_size = goal - fixed_size;
+    let free_size = (goal - 1) - fixed_size;
     let step = (f32::from(free_size) / free_count as f32).ceil() as u16;
     let mut pool = free_size;
     let mut sizes = vec![];

@@ -1,7 +1,7 @@
 extern crate text_ui;
 use text_ui::app::App;
 use text_ui::backend::Backend;
-use text_ui::widget::{shared, Linear, Readline, Shared, Text};
+use text_ui::widget::{shared, DbgDump, Linear, Readline, Shared, Text};
 use text_ui::{Event, Input, Key};
 
 use std::thread;
@@ -9,7 +9,7 @@ use std::time::Duration;
 
 struct DemoApp {
     log: Shared<Text>,
-    side: Shared<Text>,
+    side: Shared<Linear>,
     readline: Shared<Readline>,
     vbox: Shared<Linear>,
     outputs: Shared<Linear>,
@@ -19,11 +19,14 @@ struct DemoApp {
 impl DemoApp {
     fn new() -> DemoApp {
         let log = shared(Text::new(vec![]));
-        let side = shared(Text::new(vec![]));
         let mut rl = Readline::new();
         rl.width(80);
         rl.update("test1234test1234", 10);
         let readline = shared(rl);
+        let mut sidebox = Linear::vbox();
+        let dbg = shared(DbgDump::new(&readline));
+        sidebox.push(&dbg);
+        let side = shared(sidebox);
         let mut outbox = Linear::hbox();
         outbox.push(&log);
         outbox.push(&side);
@@ -31,7 +34,6 @@ impl DemoApp {
         let mut mainbox = Linear::vbox();
         mainbox.push(&outputs);
         mainbox.push(&readline);
-        //mainbox.push(&input);
         let vbox = shared(mainbox);
         DemoApp {
             log,
@@ -75,10 +77,12 @@ impl DemoApp {
     fn input(&mut self, key: Key) {
         match key {
             Key::Char('\n') => self.submit_input(),
+            Key::Alt('\r') => self.readline.write().unwrap().process_key(Key::Char('\n')),
             k => {
+                self.log_msg(&format!("{:?}", k));
                 let mut rl = self.readline.write().unwrap();
                 rl.process_key(k);
-            },
+            }
         }
     }
 }
@@ -96,34 +100,22 @@ impl App for DemoApp {
     }
     fn handle_event(&mut self, event: Event<Self::MyEvent>) -> Result<(), Option<String>> {
         match event {
-            Event::InputEvent(i) => {
-                match i {
-                    Input::Key(Key::Esc) => Err(None),
-                    Input::Key(Key::Alt('t')) => {
-                        self.toggle_side();
-                        Ok(())
-                    }
-                    Input::Key(k) => {
-                        self.input(k);
-                        Ok(())
-                    }
-                    _ => {
-                        self.log_msg(&format!("{:?}", i));
-                        Ok(())
-                    },
+            Event::InputEvent(i) => match i {
+                Input::Key(Key::Esc) => Err(None),
+                Input::Key(Key::Alt('t')) => {
+                    self.toggle_side();
+                    Ok(())
+                }
+                Input::Key(k) => {
+                    self.input(k);
+                    Ok(())
+                }
+                _ => {
+                    self.log_msg(&format!("{:?}", i));
+                    Ok(())
                 }
             },
-            Event::AppEvent(_) => {
-                let dbg = {
-                    let rl = self.readline.read().unwrap();
-                    format!("{:#?}\n{:#?}", rl.editor, rl.state)
-                };
-                self.side
-                    .write()
-                    .unwrap()
-                    .set(&dbg);
-                Ok(())
-            }
+            Event::AppEvent(_) => Ok(()),
         }
     }
 }
