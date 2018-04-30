@@ -96,6 +96,7 @@ impl Readline {
 
 // text-ui integration to be broken out later
 fn key_to_keypress(key: Key) -> KeyPress {
+    use std::ascii::AsciiExt;
     match key {
         Key::Backspace => KeyPress::Backspace,
         Key::Left => KeyPress::Left,
@@ -110,8 +111,8 @@ fn key_to_keypress(key: Key) -> KeyPress {
         Key::Insert => KeyPress::Insert,
         Key::F(u8) => KeyPress::F(u8),
         Key::Char(char) => KeyPress::Char(char),
-        Key::Alt(char) => KeyPress::Meta(char),
-        Key::Ctrl(char) => KeyPress::Ctrl(char),
+        Key::Alt(char) => KeyPress::Meta(char.to_ascii_uppercase()),
+        Key::Ctrl(char) => KeyPress::Ctrl(char.to_ascii_uppercase()),
         Key::Null => KeyPress::Null,
         Key::Esc => KeyPress::Esc,
         _ => KeyPress::UnknownEscSeq,
