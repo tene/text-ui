@@ -1,7 +1,7 @@
 extern crate text_ui;
 use text_ui::app::App;
 use text_ui::backend::Backend;
-use text_ui::widget::{shared, DbgDump, Linear, Readline, Shared, Text};
+use text_ui::widget::{shared, DbgDump, Line, Linear, Readline, Shared, Text};
 use text_ui::{Event, Input, Key};
 
 use std::thread;
@@ -29,10 +29,12 @@ impl DemoApp {
         let side = shared(sidebox);
         let mut outbox = Linear::hbox();
         outbox.push(&log);
+        outbox.push(&shared(Line::vertical()));
         outbox.push(&side);
         let outputs = shared(outbox);
         let mut mainbox = Linear::vbox();
         mainbox.push(&outputs);
+        mainbox.push(&shared(Line::horizontal()));
         mainbox.push(&readline);
         let vbox = shared(mainbox);
         DemoApp {

@@ -76,7 +76,7 @@ impl<A: App + 'static> Default for Backend<A> {
 }
 
 fn render_app(app: &impl App, size: Size) -> Pane {
-    let pos = Position::new(1, 1);
+    let pos = Position::new(0, 0);
     app.widget().render(pos, size)
 }
 

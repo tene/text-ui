@@ -1,12 +1,13 @@
 pub mod debug;
 pub mod input;
+pub mod line;
 pub mod linear;
 pub mod readline;
 pub mod text;
 
 pub use self::debug::DbgDump;
 pub use self::input::TextInput;
-pub use self::linear::Direction;
+pub use self::line::Line;
 pub use self::linear::Linear;
 pub use self::readline::Readline;
 pub use self::text::Text;
@@ -17,6 +18,12 @@ use {Position, Size};
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum Direction {
+    Horizontal,
+    Vertical,
+}
 
 #[derive(Debug)]
 pub struct Shared<W>(Arc<RwLock<W>>);
