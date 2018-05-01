@@ -90,7 +90,9 @@ impl Readline {
     }
 
     pub fn finalize(&mut self) -> String {
-        self.state.finalize()
+        let line = self.state.finalize();
+        self.editor.add_history_entry(line.clone());
+        line
     }
 }
 

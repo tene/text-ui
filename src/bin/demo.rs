@@ -19,9 +19,7 @@ struct DemoApp {
 impl DemoApp {
     fn new() -> DemoApp {
         let log = shared(Text::new(vec![]));
-        let mut rl = Readline::new();
-        rl.width(80);
-        rl.update("test1234test1234", 10);
+        let rl = Readline::new();
         let readline = shared(rl);
         let mut sidebox = Linear::vbox();
         let dbg = shared(DbgDump::new(&readline));
@@ -65,10 +63,12 @@ impl DemoApp {
     }
 
     fn submit_input(&mut self) {
+        let mut rl = self.readline.write().unwrap();
+        let line = rl.finalize();
         self.log
             .write()
             .unwrap()
-            .push(self.readline.write().unwrap().finalize());
+            .push(line);
     }
 
     fn log_msg(&mut self, msg: &str) {

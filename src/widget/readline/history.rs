@@ -19,7 +19,7 @@ pub enum Direction {
 }
 
 /// Current state of the history.
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct History {
     entries: VecDeque<String>,
     max_len: usize,

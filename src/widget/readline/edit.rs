@@ -77,6 +77,7 @@ impl fmt::Debug for Editor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("Editor")
             .field("config", &self.config)
+            .field("history", &self.history)
             .finish()
     }
 }
