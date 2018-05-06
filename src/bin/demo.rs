@@ -123,10 +123,10 @@ impl App for DemoApp {
 }
 
 fn main() {
-    let mut be = Backend::new();
+    let be = Backend::new();
     let myevents = be.sender.clone();
     thread::spawn(move || loop {
-        myevents.send(Event::AppEvent(DemoEvent::Tick)).unwrap();
+        myevents.send(DemoEvent::Tick).unwrap();
         thread::sleep(Duration::from_millis(500));
     });
     let mut app = DemoApp::new();

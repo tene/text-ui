@@ -21,8 +21,8 @@ fn goto(pos: Position) -> Goto {
 }
 
 pub struct Backend<A: App> {
-    pub sender: Sender<Event<A::MyEvent>>,
-    receiver: Receiver<Event<A::MyEvent>>,
+    pub sender: Sender<A::MyEvent>,
+    receiver: Receiver<A::MyEvent>,
     size: Size,
 }
 
@@ -41,15 +41,16 @@ where
             size,
         }
     }
-    pub fn run_app(&mut self, app: &mut A) {
-        let stdin = stdin();
+    pub fn run_app(mut self, app: &mut A) {
         let mut screen =
             MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
 
         draw_app(&mut screen, app, self.size);
 
-        let inputsender = self.sender.clone();
+        let (event_sender, event_receiver) = channel();
+        let inputsender = event_sender.clone();
         thread::spawn(move || {
+            let stdin = stdin();
             for c in stdin.events() {
                 let evt = c.unwrap();
                 match inputsender.send(Event::InputEvent(evt)) {
@@ -59,7 +60,18 @@ where
             }
         });
 
-        for e in self.receiver.iter() {
+        let app_events = self.receiver.into_iter();
+
+        thread::spawn(move || {
+            for a in app_events {
+                match event_sender.send(Event::AppEvent(a)) {
+                    Ok(_) => {}
+                    Err(_) => break,
+                }
+            }
+        });
+
+        for e in event_receiver.iter() {
             match app.handle_event(e) {
                 Ok(_) => {}
                 Err(_) => break,
