@@ -209,10 +209,9 @@ impl Changeset {
 
     fn single_char(s: &str) -> bool {
         let mut graphemes = s.graphemes(true);
-        graphemes
-            .next()
-            .map_or(false, |grapheme| grapheme.is_alphanumeric())
-            && graphemes.next().is_none()
+        graphemes.next().map_or(false, |grapheme| {
+            grapheme.chars().all(|c| c.is_alphanumeric())
+        }) && graphemes.next().is_none()
     }
 
     pub fn replace<S: AsRef<str> + Into<String> + Debug>(&mut self, indx: usize, old_: S, new_: S) {
