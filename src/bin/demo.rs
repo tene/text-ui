@@ -65,10 +65,7 @@ impl DemoApp {
     fn submit_input(&mut self) {
         let mut rl = self.readline.write().unwrap();
         let line = rl.finalize();
-        self.log
-            .write()
-            .unwrap()
-            .push(line);
+        self.log.write().unwrap().push(line);
     }
 
     fn log_msg(&mut self, msg: &str) {
