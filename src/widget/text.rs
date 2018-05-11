@@ -21,11 +21,11 @@ impl Widget for Text {
                     .into_iter()
             })
             .collect();
-        let loglen = self.lines.len();
+        let loglen = lines.len();
         let lines = if loglen > size.height as usize {
-            self.lines.clone().split_off(loglen - size.height as usize)
+            lines.clone().split_off(loglen - size.height as usize)
         } else {
-            self.lines.clone()
+            lines.clone()
         };
         Some(lines)
     }

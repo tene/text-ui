@@ -2,6 +2,7 @@
 extern crate log;
 
 extern crate unicode_segmentation;
+use unicode_segmentation::UnicodeSegmentation;
 
 extern crate termion;
 pub use termion::event::Event as Input;
@@ -14,6 +15,19 @@ pub mod backend;
 pub mod pane;
 pub mod widget;
 
+pub fn text_to_lines(text: String, width: usize) -> Vec<String> {
+    let lines: Vec<String> = text.lines()
+        .flat_map(|l| {
+            let letters: Vec<&str> = UnicodeSegmentation::graphemes(l, true).collect();
+            letters
+                .chunks(width)
+                .map(|ls| ls.concat())
+                .collect::<Vec<String>>()
+                .into_iter()
+        })
+        .collect();
+        lines
+}
 // XXX Ugh, naming?!?!
 #[derive(Debug, PartialEq, Clone)]
 pub enum Event<A: Send> {

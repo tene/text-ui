@@ -26,4 +26,13 @@ impl Pane {
             children: self.children,
         }
     }
+
+    pub fn push_child(&mut self, child: Pane) {
+        let mut children = match self.children.take() {
+            Some(ch) => ch,
+            None => vec![],
+        };
+        children.push(child);
+        self.children = Some(children);
+    }
 }
