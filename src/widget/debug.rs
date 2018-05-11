@@ -18,7 +18,7 @@ impl<T: Debug> DbgDump<T> {
 
 impl<T: Debug> Widget for DbgDump<T> {
     fn render_content(&self, size: Size) -> Option<Vec<String>> {
-        let lines = format!("{:#?}", self.object.read())
+        let lines = format!("{:#?}", *self.object.read().unwrap())
             .lines()
             .flat_map(|l| l.as_bytes().chunks(size.width as usize))
             .map(|l| str::from_utf8(l).unwrap().to_owned())

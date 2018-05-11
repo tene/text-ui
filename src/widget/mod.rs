@@ -15,6 +15,7 @@ pub use self::text::Text;
 use pane::Pane;
 use {Position, Size};
 
+use std::fmt;
 use std::ops::DerefMut;
 use std::sync::Arc;
 use std::sync::{LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard};
@@ -25,7 +26,6 @@ pub enum Direction {
     Vertical,
 }
 
-#[derive(Debug)]
 pub struct Shared<W>(Arc<RwLock<W>>);
 
 impl<W> Shared<W> {
@@ -42,13 +42,28 @@ impl<W> Shared<W> {
     }
 }
 
+impl<W> From<Arc<RwLock<W>>> for Shared<W> {
+    fn from(s: Arc<RwLock<W>>) -> Self {
+        Shared(s)
+    }
+}
+
+impl<W> fmt::Debug for Shared<W>
+where
+    W: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.read().unwrap().fmt(f)
+    }
+}
+
 impl<W> Clone for Shared<W> {
     fn clone(&self) -> Self {
         Shared(self.0.clone())
     }
 }
 
-pub fn shared<W: Widget>(w: W) -> Shared<W> {
+pub fn shared<W>(w: W) -> Shared<W> {
     Shared(Arc::new(RwLock::new(w)))
 }
 
