@@ -1,3 +1,5 @@
+use std::cmp::max;
+
 use Position;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -34,5 +36,33 @@ impl Pane {
         };
         children.push(child);
         self.children = Some(children);
+    }
+
+    pub fn height(&self) -> usize {
+        let mut rv = match &self.content {
+            Some(content) => content.len(),
+            None => 0,
+        };
+        if let Some(children) = &self.children {
+            rv = children
+                .iter()
+                .map(|c| c.height() + c.position.y as usize)
+                .fold(rv, max);
+        }
+        rv
+    }
+
+    pub fn width(&self) -> usize {
+        let mut rv = match &self.content {
+            Some(content) => content.iter().map(|l| l.len()).fold(0, max),
+            None => 0,
+        };
+        if let Some(children) = &self.children {
+            rv = children
+                .iter()
+                .map(|c| c.width() + c.position.x as usize)
+                .fold(rv, max);
+        }
+        rv
     }
 }

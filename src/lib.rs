@@ -26,7 +26,7 @@ pub fn text_to_lines(text: String, width: usize) -> Vec<String> {
                 .into_iter()
         })
         .collect();
-        lines
+    lines
 }
 // XXX Ugh, naming?!?!
 #[derive(Debug, PartialEq, Clone)]
