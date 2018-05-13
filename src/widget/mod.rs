@@ -90,11 +90,14 @@ pub trait Widget {
         let content = self.render_content(size);
         let focus = self.render_focus(size).map(|f| f + position);
         let children = self.render_children(size);
+        let style = self.render_style();
         Pane {
             position,
+            size,
             content,
             focus,
             children,
+            style,
         }
     }
     fn render_content(&self, Size) -> Option<Vec<String>> {
@@ -104,6 +107,9 @@ pub trait Widget {
         None
     }
     fn render_children(&self, Size) -> Option<Vec<Pane>> {
+        None
+    }
+    fn render_style(&self) -> Option<String> {
         None
     }
     fn render_bounds(&self) -> BoundSize {

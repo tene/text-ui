@@ -4,6 +4,7 @@ use std::io::{stdin, stdout};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
+pub use termion::color::{self, Color};
 use termion::cursor::{Goto, Hide, Show};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::IntoRawMode;
@@ -96,12 +97,12 @@ fn draw_app(screen: &mut impl Write, app: &impl App, size: Size) {
     let pos = Position::new(1, 1);
     let pane = render_app(app, size);
     //eprintln!("{:#?}{:?}", pane, size);
-    draw_pane(screen, pos, &pane);
+    draw_pane(screen, app, pos, &pane);
 }
 
-fn draw_pane(screen: &mut impl Write, pos: Position, pane: &Pane) {
+fn draw_pane(screen: &mut impl Write, app: &impl App, pos: Position, pane: &Pane) {
     write!(screen, "{}", termion::clear::All).unwrap();
-    let focus = draw_pane_helper(screen, pos, pane);
+    let focus = draw_pane_helper(screen, app, pos, pane);
     match focus {
         Some(pos) => write!(screen, "{}{}", Show, goto(pos)),
         None => write!(screen, "{}", Hide),
@@ -109,22 +110,55 @@ fn draw_pane(screen: &mut impl Write, pos: Position, pane: &Pane) {
     screen.flush().unwrap();
 }
 
-fn draw_pane_helper(screen: &mut impl Write, pos: Position, pane: &Pane) -> Option<Position> {
-    match &pane.content {
-        Some(lines) => for (i, row) in lines.iter().enumerate() {
-            write!(
-                screen,
-                "{}{}",
-                goto(pos + pane.position.offset(0, i as u16)),
-                row
-            ).unwrap();
+fn style_color(app: &impl App, s: &Option<String>) -> String {
+    match s {
+        Some(name) => match app.style(&name) {
+            (Some(fg), Some(bg)) => format!("{}{}", color::Fg(&*fg), color::Bg(&*bg)),
+            (Some(fg), _) => format!("{}", color::Fg(&*fg)),
+            (_, Some(bg)) => format!("{}", color::Bg(&*bg)),
+            _ => "".to_string(),
         },
+        None => "".to_owned(),
+    }
+}
+
+fn style_reset(app: &impl App, s: &Option<String>) -> String {
+    match s {
+        Some(name) => match (app.style(&name), app.default_style()) {
+            ((Some(_fg), Some(_bg)), def) => format!("{}{}", color::Fg(&*def), color::Bg(&*def)),
+            ((Some(_fg), _), def) => format!("{}", color::Fg(&*def)),
+            ((_, Some(bg)), def) => format!("{}", color::Bg(&*def)),
+            _ => "".to_string(),
+        },
+        None => "".to_owned(),
+    }
+}
+
+fn draw_pane_helper(
+    screen: &mut impl Write,
+    app: &impl App,
+    pos: Position,
+    pane: &Pane,
+) -> Option<Position> {
+    match &pane.content {
+        Some(lines) => {
+            for (i, row) in lines.iter().enumerate() {
+                write!(
+                    screen,
+                    "{}{}{}",
+                    style_color(app, &pane.style),
+                    goto(pos + pane.position.offset(0, i as u16)),
+                    row
+                ).unwrap();
+                write!(screen, "{}", style_reset(app, &pane.style));
+            }
+        }
         None => {}
     }
     let mut child_focus = None;
     match &pane.children {
         Some(children) => for child in children {
-            let f = draw_pane_helper(screen, pos + pane.position, child);
+            let f = draw_pane_helper(screen, app, pos + pane.position, child);
             if f.is_some() {
                 child_focus = f
             };

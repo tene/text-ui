@@ -144,4 +144,7 @@ impl Widget for Readline {
         let pos = self.state.cursor;
         Some(Position::new(pos.col as u16, pos.row as u16))
     }
+    fn render_style(&self) -> Option<String> {
+        Some("input".to_string())
+    }
 }

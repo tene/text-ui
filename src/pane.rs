@@ -1,32 +1,34 @@
 use std::cmp::max;
 
 use Position;
+use Size;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Pane {
     pub position: Position,
+    pub size: Size,
     pub content: Option<Vec<String>>,
     pub focus: Option<Position>,
     pub children: Option<Vec<Pane>>,
+    pub style: Option<String>,
 }
 
 impl Pane {
-    pub fn new(pos: Position, content: Vec<String>) -> Pane {
+    pub fn new(position: Position, size: Size, content: Vec<String>) -> Pane {
         Pane {
-            position: pos,
+            position,
+            size,
             content: Some(content),
             focus: None,
             children: None,
+            style: None,
         }
     }
 
-    pub fn offset(self, pos: Position) -> Self {
-        Pane {
-            position: self.position + pos,
-            content: self.content,
-            focus: self.focus.map(|f| f + pos),
-            children: self.children,
-        }
+    pub fn offset(mut self, pos: Position) -> Self {
+        self.focus = self.focus.map(|f| f + pos);
+        self.position = self.position + pos;
+        self
     }
 
     pub fn push_child(&mut self, child: Pane) {
@@ -38,7 +40,7 @@ impl Pane {
         self.children = Some(children);
     }
 
-    pub fn height(&self) -> usize {
+    /*pub fn height(&self) -> usize {
         let mut rv = match &self.content {
             Some(content) => content.len(),
             None => 0,
@@ -64,5 +66,5 @@ impl Pane {
                 .fold(rv, max);
         }
         rv
-    }
+    }*/
 }

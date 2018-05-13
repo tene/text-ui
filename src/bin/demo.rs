@@ -1,6 +1,8 @@
 extern crate text_ui;
 use text_ui::app::App;
-use text_ui::backend::Backend;
+use text_ui::backend::{
+    color::{self, Color}, Backend,
+};
 use text_ui::widget::{shared, DbgDump, Line, Linear, Readline, Shared, Text};
 use text_ui::{Event, Input, Key};
 
@@ -115,6 +117,12 @@ impl App for DemoApp {
                 }
             },
             Event::AppEvent(_) => Ok(()),
+        }
+    }
+    fn style(&self, style: &str) -> (Option<Box<Color>>, Option<Box<Color>>) {
+        match style {
+            "input" => (Some(Box::new(color::LightRed)), None),
+            _ => (None, None),
         }
     }
 }
