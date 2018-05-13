@@ -142,16 +142,19 @@ fn draw_pane_helper(
 ) -> Option<Position> {
     match &pane.content {
         Some(lines) => {
-            for (i, row) in lines.iter().enumerate() {
+            write!(screen, "{}", style_color(app, &pane.style));
+            let blank_row = format!("{: <width$}", " ", width = pane.size.width as usize);
+            for i in 0..pane.size.height {
+                let row = lines.get(i as usize).unwrap_or(&blank_row);
                 write!(
                     screen,
-                    "{}{}{}",
-                    style_color(app, &pane.style),
+                    "{}{: <width$}",
                     goto(pos + pane.position.offset(0, i as u16)),
-                    row
+                    row,
+                    width = pane.size.width as usize
                 ).unwrap();
-                write!(screen, "{}", style_reset(app, &pane.style));
             }
+            write!(screen, "{}", style_reset(app, &pane.style));
         }
         None => {}
     }

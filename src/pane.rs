@@ -25,6 +25,54 @@ impl Pane {
         }
     }
 
+    pub fn new_width(width: usize) -> Pane {
+        Pane {
+            position: Position::new(0, 0),
+            size: Size::new(width as u16, 1),
+            content: None,
+            focus: None,
+            children: None,
+            style: None,
+        }
+    }
+
+    pub fn new_styled(
+        position: Position,
+        size: Size,
+        content: Vec<String>,
+        stylename: &str,
+    ) -> Pane {
+        Pane {
+            position,
+            size,
+            content: Some(content),
+            focus: None,
+            children: None,
+            style: Some(stylename.to_string()),
+        }
+    }
+
+    pub fn new_children(
+        position: Position,
+        size: Size,
+        content: Vec<String>,
+        children: Vec<Pane>,
+    ) -> Pane {
+        let children = if children.len() > 0 {
+            Some(children)
+        } else {
+            None
+        };
+        Pane {
+            position,
+            size,
+            content: Some(content),
+            focus: None,
+            children,
+            style: None,
+        }
+    }
+
     pub fn offset(mut self, pos: Position) -> Self {
         self.focus = self.focus.map(|f| f + pos);
         self.position = self.position + pos;
@@ -36,8 +84,14 @@ impl Pane {
             Some(ch) => ch,
             None => vec![],
         };
+        self.size.height = max(child.position.y + child.size.height, self.size.height);
+        self.size.width = max(child.position.x + child.size.width, self.size.width);
         children.push(child);
         self.children = Some(children);
+    }
+
+    pub fn set_style(&mut self, style: &str) {
+        self.style = Some(style.to_owned());
     }
 
     /*pub fn height(&self) -> usize {
