@@ -20,3 +20,6 @@ TODO:
   * Scrolling List
 * Work out general focus/input model
 * Rewrite with Futures
+  * (Sink<Item=Event> + Stream<Frame>)?
+  * Optimize rendering by only drawing partial updates from a diff against the previous frame
+* Styling
