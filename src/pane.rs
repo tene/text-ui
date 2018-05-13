@@ -74,7 +74,6 @@ impl Pane {
     }
 
     pub fn offset(mut self, pos: Position) -> Self {
-        self.focus = self.focus.map(|f| f + pos);
         self.position = self.position + pos;
         self
     }

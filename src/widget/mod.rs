@@ -88,7 +88,7 @@ impl BoundSize {
 pub trait Widget {
     fn render(&self, position: Position, size: Size) -> Pane {
         let content = self.render_content(size);
-        let focus = self.render_focus(size).map(|f| f + position);
+        let focus = self.render_focus(size);
         let children = self.render_children(size);
         let style = self.render_style();
         Pane {

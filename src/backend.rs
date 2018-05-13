@@ -104,7 +104,7 @@ fn draw_pane(screen: &mut impl Write, app: &impl App, pos: Position, pane: &Pane
     write!(screen, "{}", termion::clear::All).unwrap();
     let focus = draw_pane_helper(screen, app, pos, pane);
     match focus {
-        Some(pos) => write!(screen, "{}{}", Show, goto(pos)),
+        Some(fpos) => write!(screen, "{}{}", Show, goto(fpos)),
         None => write!(screen, "{}", Hide),
     }.unwrap();
     screen.flush().unwrap();

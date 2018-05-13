@@ -55,29 +55,43 @@ impl State {
     pub fn refresh(&mut self) {
         let focuspos = self.line.pos();
         let mut focus = Position::new(0, 0);
-        let mut row: usize = 0;
-        let mut col: usize = 0;
         let mut idx = 0;
-        for c in UnicodeSegmentation::graphemes(self.line.as_str(), true) {
-            col += 1;
-            if c == "\n" || col >= self.width {
-                row += 1;
-                col = 0;
+        let lines = self.render_width(self.width);
+        self.rows = lines.len();
+        'outer: for (row, line) in lines.into_iter().enumerate() {
+            if idx == focuspos {
+                focus = Position::new(0, row);
+                break 'outer;
+            }
+            for (col, _ch) in UnicodeSegmentation::graphemes(line.as_str(), true).enumerate() {
+                idx += 1;
+                if idx == focuspos {
+                    focus = Position::new(col + 1, row);
+                    break 'outer;
+                }
             }
             idx += 1;
-            if idx == focuspos {
-                focus = Position::new(col, row);
-            }
         }
-        self.rows = row + 1;
         self.cursor = focus;
     }
 
     pub fn render_width(&self, width: usize) -> Vec<String> {
-        let lines = self.line.as_str().lines();
-
-        let charlists = lines.map(|l| UnicodeSegmentation::graphemes(l, true));
-        charlists.map(|l| l.collect()).collect()
+        let lines: Vec<String> = self.line
+            .as_str()
+            .split('\n')
+            .flat_map(|l| {
+                let letters: Vec<&str> = UnicodeSegmentation::graphemes(l, true).collect();
+                let mut split_lines = letters
+                    .chunks(width)
+                    .map(|ls| ls.concat())
+                    .collect::<Vec<String>>();
+                if split_lines.len() == 0 {
+                    split_lines.push("".to_string());
+                }
+                split_lines.into_iter()
+            })
+            .collect();
+        lines
     }
 
     pub fn finalize(&mut self) -> String {
