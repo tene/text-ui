@@ -8,7 +8,7 @@ extern crate termion;
 pub use termion::event::Event as Input;
 pub use termion::event::Key;
 
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 pub mod app;
 pub mod backend;
@@ -60,6 +60,17 @@ impl Add for Position {
         Position {
             x: self.x + other.x,
             y: self.y + other.y,
+        }
+    }
+}
+
+impl Sub for Position {
+    type Output = Position;
+
+    fn sub(self, other: Position) -> Position {
+        Position {
+            x: self.x - other.x,
+            y: self.y - other.y,
         }
     }
 }

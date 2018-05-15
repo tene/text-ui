@@ -23,3 +23,4 @@ TODO:
   * (Sink<Item=Event> + Stream<Frame>)?
   * Optimize rendering by only drawing partial updates from a diff against the previous frame
 * Styling
+* Migrate Size and Position to usize from u16
