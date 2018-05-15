@@ -100,6 +100,11 @@ impl State {
         self.refresh();
         rv
     }
+
+    pub fn set_line(&mut self, text: &str) {
+        self.line.update(text, text.len());
+        self.refresh();
+    }
 }
 
 impl Refresher for State {

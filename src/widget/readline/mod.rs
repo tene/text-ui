@@ -94,6 +94,10 @@ impl Readline {
         self.editor.add_history_entry(line.clone());
         line
     }
+
+    pub fn set_line(&mut self, text: &str) {
+        self.state.set_line(text);
+    }
 }
 
 // text-ui integration to be broken out later
