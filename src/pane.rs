@@ -28,7 +28,7 @@ impl Pane {
     pub fn new_width(width: usize) -> Pane {
         Pane {
             position: Position::new(0, 0),
-            size: Size::new(width as u16, 1),
+            size: Size::new(width, 1),
             content: None,
             focus: None,
             children: None,
@@ -97,14 +97,9 @@ impl Pane {
                 let clip_pos = clip_pos - self.position;
                 let content = content
                     .into_iter()
-                    .skip(clip_pos.y as usize)
-                    .take(clip_size.height as usize)
-                    .map(|l| {
-                        l.chars()
-                            .skip(clip_pos.x as usize)
-                            .take(clip_size.width as usize)
-                            .collect()
-                    })
+                    .skip(clip_pos.y)
+                    .take(clip_size.height)
+                    .map(|l| l.chars().skip(clip_pos.x).take(clip_size.width).collect())
                     .collect();
                 Some(content)
             }
@@ -175,7 +170,7 @@ impl Pane {
         if let Some(children) = &self.children {
             rv = children
                 .iter()
-                .map(|c| c.height() + c.position.y as usize)
+                .map(|c| c.height() + c.position.y )
                 .fold(rv, max);
         }
         rv
@@ -189,7 +184,7 @@ impl Pane {
         if let Some(children) = &self.children {
             rv = children
                 .iter()
-                .map(|c| c.width() + c.position.x as usize)
+                .map(|c| c.width() + c.position.x )
                 .fold(rv, max);
         }
         rv

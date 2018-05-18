@@ -11,10 +11,8 @@ pub struct Line {
 impl Widget for Line {
     fn render_content(&self, size: Size) -> Option<Vec<String>> {
         let lines = match self.direction {
-            Direction::Horizontal => vec![repeat("─").take(size.width as usize).collect()],
-            Direction::Vertical => repeat("│".to_owned())
-                .take(size.height as usize)
-                .collect(),
+            Direction::Horizontal => vec![repeat("─").take(size.width).collect()],
+            Direction::Vertical => repeat("│".to_owned()).take(size.height).collect(),
         };
         Some(lines)
     }

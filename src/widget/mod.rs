@@ -69,8 +69,8 @@ pub fn shared<W>(w: W) -> Shared<W> {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Bound {
-    Fixed(u16),
-    AtLeast(u16),
+    Fixed(usize),
+    AtLeast(usize),
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]

@@ -18,7 +18,7 @@ use Position;
 use Size;
 
 fn goto(pos: Position) -> Goto {
-    Goto(pos.x, pos.y)
+    Goto(pos.x as u16, pos.y as u16)
 }
 
 pub struct Backend<A: App> {
@@ -35,7 +35,7 @@ where
     pub fn new() -> Self {
         let (width, height) = termion::terminal_size().unwrap();
         let (sender, receiver) = channel();
-        let size = Size::new(width, height);
+        let size = Size::new(width as usize, height as usize);
         Backend {
             sender,
             receiver,
@@ -143,15 +143,15 @@ fn draw_pane_helper(
     match &pane.content {
         Some(lines) => {
             write!(screen, "{}", style_color(app, &pane.style));
-            let blank_row = format!("{: <width$}", " ", width = pane.size.width as usize);
+            let blank_row = format!("{: <width$}", " ", width = pane.size.width);
             for i in 0..pane.size.height {
-                let row = lines.get(i as usize).unwrap_or(&blank_row);
+                let row = lines.get(i).unwrap_or(&blank_row);
                 write!(
                     screen,
                     "{}{: <width$}",
-                    goto(pos + pane.position.offset(0, i as u16)),
+                    goto(pos + pane.position.offset(0, i)),
                     row,
-                    width = pane.size.width as usize
+                    width = pane.size.width
                 ).unwrap();
             }
             write!(screen, "{}", style_reset(app, &pane.style));

@@ -14,7 +14,7 @@ impl Widget for TextInput {
         Some(vec![self.buf.clone()])
     }
     fn render_focus(&self, _size: Size) -> Option<Position> {
-        Some(Position::new(self.index as u16, 0))
+        Some(Position::new(self.index, 0))
     }
     fn render_bounds(&self) -> BoundSize {
         BoundSize {

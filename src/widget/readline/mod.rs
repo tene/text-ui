@@ -133,20 +133,20 @@ impl Readline {
 
 impl Widget for Readline {
     fn render_content(&self, size: Size) -> Option<Vec<String>> {
-        /*if self.state.width != size.width as usize {
-            self.state.width = size.width as usize;
+        /*if self.state.width != size.width  {
+            self.state.width = size.width ;
         }*/
-        Some(self.state.render_width(size.width as usize))
+        Some(self.state.render_width(size.width))
     }
     fn render_bounds(&self) -> BoundSize {
         BoundSize {
-            width: Bound::Fixed(self.state.width as u16),
-            height: Bound::Fixed(self.state.rows as u16),
+            width: Bound::Fixed(self.state.width),
+            height: Bound::Fixed(self.state.rows),
         }
     }
     fn render_focus(&self, _size: Size) -> Option<Position> {
         let pos = self.state.cursor;
-        Some(Position::new(pos.col as u16, pos.row as u16))
+        Some(Position::new(pos.col, pos.row))
     }
     fn render_style(&self) -> Option<String> {
         Some("input".to_string())

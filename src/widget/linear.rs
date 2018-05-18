@@ -38,10 +38,10 @@ impl Linear {
     }
 }
 
-fn layout_bounds_proportional(bounds: &[Bound], goal: u16) -> Vec<u16> {
+fn layout_bounds_proportional(bounds: &[Bound], goal: usize) -> Vec<usize> {
     let (fixed_size, free_count) = coalesce_bounds(bounds);
     let free_size = (goal) - fixed_size;
-    let step = (f32::from(free_size) / free_count as f32).ceil() as u16;
+    let step = free_size.checked_div(free_count).unwrap_or(0);
     let mut pool = free_size;
     let mut sizes = vec![];
     for item in bounds {
@@ -110,8 +110,8 @@ impl Widget for Linear {
     }
 }
 
-fn coalesce_bounds(bounds: &[Bound]) -> (u16, usize) {
-    let mut fixed: u16 = 0;
+fn coalesce_bounds(bounds: &[Bound]) -> (usize, usize) {
+    let mut fixed: usize = 0;
     let mut free: usize = 0;
     for bound in bounds {
         match bound {

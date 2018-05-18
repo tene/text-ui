@@ -15,15 +15,15 @@ impl Widget for Text {
             .flat_map(|l| {
                 let letters: Vec<&str> = UnicodeSegmentation::graphemes(l, true).collect();
                 letters
-                    .chunks(size.width as usize)
+                    .chunks(size.width)
                     .map(|ls| ls.concat())
                     .collect::<Vec<String>>()
                     .into_iter()
             })
             .collect();
         let loglen = lines.len();
-        let lines = if loglen > size.height as usize {
-            lines.clone().split_off(loglen - size.height as usize)
+        let lines = if loglen > size.height {
+            lines.clone().split_off(loglen - size.height)
         } else {
             lines.clone()
         };

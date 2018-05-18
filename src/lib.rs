@@ -37,15 +37,15 @@ pub enum Event<A: Send> {
 
 #[derive(Debug, PartialEq, Clone, Copy, Default)]
 pub struct Position {
-    pub x: u16,
-    pub y: u16,
+    pub x: usize,
+    pub y: usize,
 }
 
 impl Position {
-    pub fn new(x: u16, y: u16) -> Position {
+    pub fn new(x: usize, y: usize) -> Position {
         Position { x, y }
     }
-    pub fn offset(self, x: u16, y: u16) -> Position {
+    pub fn offset(self, x: usize, y: usize) -> Position {
         Position {
             x: self.x + x,
             y: self.y + y,
@@ -77,15 +77,15 @@ impl Sub for Position {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Size {
-    pub width: u16,
-    pub height: u16,
+    pub width: usize,
+    pub height: usize,
 }
 
 impl Size {
-    pub fn new(width: u16, height: u16) -> Size {
+    pub fn new(width: usize, height: usize) -> Size {
         Size { width, height }
     }
-    pub fn offset(self, width: u16, height: u16) -> Size {
+    pub fn offset(self, width: usize, height: usize) -> Size {
         Size {
             width: self.width + width,
             height: self.height + height,
