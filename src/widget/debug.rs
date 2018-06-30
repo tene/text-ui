@@ -1,5 +1,5 @@
-use widget::{Bound, BoundSize, Shared, Widget};
-use {Position, Size};
+use widget::{Shared, Widget};
+use Size;
 
 use std::fmt::Debug;
 use std::str;

@@ -8,3 +8,6 @@ unicode-segmentation = "1.2"
 termion = "1.5.1"
 log = "*"
 libc = "*"
+
+[dev-dependencies]
+tempdir = "*"

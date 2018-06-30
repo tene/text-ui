@@ -57,7 +57,8 @@ impl History {
         }
         if line.as_ref().is_empty()
             || (self.ignore_space
-                && line.as_ref()
+                && line
+                    .as_ref()
                     .chars()
                     .next()
                     .map_or(true, |c| c.is_whitespace()))
@@ -182,7 +183,8 @@ impl History {
         }
         match dir {
             Direction::Reverse => {
-                let index = self.entries
+                let index = self
+                    .entries
                     .iter()
                     .rev()
                     .skip(self.entries.len() - 1 - start)
@@ -270,8 +272,8 @@ fn fix_perm(file: &File) {
 #[cfg(test)]
 mod tests {
     extern crate tempdir;
+    use super::super::config::Config;
     use super::{Direction, History};
-    use config::Config;
     use std::path::Path;
 
     fn init() -> History {

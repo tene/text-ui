@@ -5,6 +5,7 @@ use Size;
 #[derive(Debug, PartialEq, Clone)]
 pub struct Text {
     pub lines: Vec<String>,
+    pub style: Option<String>,
 }
 
 impl Widget for Text {
@@ -29,11 +30,18 @@ impl Widget for Text {
         };
         Some(lines)
     }
+    fn render_style(&self) -> Option<String> {
+        self.style.clone()
+    }
 }
 
 impl Text {
-    pub fn new(l: Vec<String>) -> Text {
-        Text { lines: l }
+    pub fn new(lines: Vec<String>) -> Text {
+        Text { lines, style: None }
+    }
+    pub fn new_styled(lines: Vec<String>, s: &str) -> Text {
+        let style = Some(s.to_owned());
+        Text { lines, style }
     }
     pub fn push(&mut self, s: String) {
         self.lines.extend(s.lines().map(|l| l.to_owned()));

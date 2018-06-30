@@ -76,7 +76,8 @@ impl State {
     }
 
     pub fn render_width(&self, width: usize) -> Vec<String> {
-        let lines: Vec<String> = self.line
+        let lines: Vec<String> = self
+            .line
             .as_str()
             .split('\n')
             .flat_map(|l| {
@@ -419,59 +420,56 @@ impl State {
 }
 
 #[cfg(test)]
-pub fn init_state(out: &'out mut Renderer, line: &str, pos: usize) -> State<'out, 'static> {
+pub fn init_state(line: &str, pos: usize) -> State {
     State {
-        out,
-        prompt: "",
-        prompt_size: Position::default(),
+        rows: 1,
+        width: line.len(),
         line: LineBuffer::init(line, pos, None),
         cursor: Position::default(),
         history_index: 0,
         saved_line_for_history: LineBuffer::with_capacity(100),
         byte_buffer: [0; 4],
         changes: Rc::new(RefCell::new(Changeset::new())),
-        hinter: None,
     }
 }
 
 #[cfg(test)]
 mod test {
+    use super::super::history::History;
     use super::init_state;
-    use history::History;
 
     #[test]
     fn edit_history_next() {
-        let mut out = ::std::io::sink();
         let line = "current edited line";
-        let mut s = init_state(&mut out, line, 6);
+        let mut s = init_state(line, 6);
         let mut history = History::new();
         history.add("line0");
         history.add("line1");
         s.history_index = history.len();
 
         for _ in 0..2 {
-            s.edit_history_next(&history, false).unwrap();
+            s.edit_history_next(&history, false);
             assert_eq!(line, s.line.as_str());
         }
 
-        s.edit_history_next(&history, true).unwrap();
+        s.edit_history_next(&history, true);
         assert_eq!(line, s.saved_line_for_history.as_str());
         assert_eq!(1, s.history_index);
         assert_eq!("line1", s.line.as_str());
 
         for _ in 0..2 {
-            s.edit_history_next(&history, true).unwrap();
+            s.edit_history_next(&history, true);
             assert_eq!(line, s.saved_line_for_history.as_str());
             assert_eq!(0, s.history_index);
             assert_eq!("line0", s.line.as_str());
         }
 
-        s.edit_history_next(&history, false).unwrap();
+        s.edit_history_next(&history, false);
         assert_eq!(line, s.saved_line_for_history.as_str());
         assert_eq!(1, s.history_index);
         assert_eq!("line1", s.line.as_str());
 
-        s.edit_history_next(&history, false).unwrap();
+        s.edit_history_next(&history, false);
         // assert_eq!(line, s.saved_line_for_history);
         assert_eq!(2, s.history_index);
         assert_eq!(line, s.line.as_str());

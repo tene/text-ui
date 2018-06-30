@@ -93,7 +93,7 @@ impl Pane {
         }
         self.content = match self.content.take() {
             None => None,
-            Some(mut content) => {
+            Some(content) => {
                 let clip_pos = clip_pos - self.position;
                 let content = content
                     .into_iter()
@@ -106,7 +106,7 @@ impl Pane {
         };
         self.children = match self.children.take() {
             None => None,
-            Some(mut children) => {
+            Some(children) => {
                 let clip_pos = clip_pos - self.position;
                 let mut children: Vec<Pane> = children
                     .into_iter()

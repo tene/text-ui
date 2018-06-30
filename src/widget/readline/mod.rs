@@ -2,10 +2,7 @@ use termion::event::Key;
 use widget::{Bound, BoundSize, Widget};
 use {Position, Size};
 
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::fmt;
-use std::rc::Rc;
 
 mod config;
 mod consts;
@@ -18,10 +15,9 @@ mod process;
 mod state;
 mod undo;
 
-use self::config::Config;
 use self::consts::KeyPress;
 pub use self::edit::Editor;
-use self::keymap::{Cmd, InputState};
+use self::keymap::InputState;
 use self::process::{process_char, process_command};
 pub use self::state::State;
 
@@ -102,7 +98,6 @@ impl Readline {
 
 // text-ui integration to be broken out later
 fn key_to_keypress(key: Key) -> KeyPress {
-    use std::ascii::AsciiExt;
     match key {
         Key::Backspace => KeyPress::Backspace,
         Key::Left => KeyPress::Left,

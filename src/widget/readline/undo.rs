@@ -178,7 +178,8 @@ impl Changeset {
         }
 
         if !Self::single_char(string.as_ref())
-            || !self.undos
+            || !self
+                .undos
                 .last()
                 .map_or(false, |lc| lc.delete_seq(indx, string.as_ref().len()))
         {
@@ -330,8 +331,8 @@ impl ChangeListener for Changeset {
 
 #[cfg(test)]
 mod tests {
+    use super::super::line_buffer::LineBuffer;
     use super::Changeset;
-    use line_buffer::LineBuffer;
 
     #[test]
     fn test_insert_chars() {

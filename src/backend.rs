@@ -42,7 +42,7 @@ where
             size,
         }
     }
-    pub fn run_app(mut self, app: &mut A) {
+    pub fn run_app(self, app: &mut A) {
         let mut screen =
             MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
 
@@ -127,7 +127,7 @@ fn style_reset(app: &impl App, s: &Option<String>) -> String {
         Some(name) => match (app.style(&name), app.default_style()) {
             ((Some(_fg), Some(_bg)), def) => format!("{}{}", color::Fg(&*def), color::Bg(&*def)),
             ((Some(_fg), _), def) => format!("{}", color::Fg(&*def)),
-            ((_, Some(bg)), def) => format!("{}", color::Bg(&*def)),
+            ((_, Some(_bg)), def) => format!("{}", color::Bg(&*def)),
             _ => "".to_string(),
         },
         None => "".to_owned(),
@@ -142,7 +142,7 @@ fn draw_pane_helper(
 ) -> Option<Position> {
     match &pane.content {
         Some(lines) => {
-            write!(screen, "{}", style_color(app, &pane.style));
+            write!(screen, "{}", style_color(app, &pane.style)).unwrap();
             let blank_row = format!("{: <width$}", " ", width = pane.size.width);
             for i in 0..pane.size.height {
                 let row = lines.get(i).unwrap_or(&blank_row);
@@ -154,7 +154,7 @@ fn draw_pane_helper(
                     width = pane.size.width
                 ).unwrap();
             }
-            write!(screen, "{}", style_reset(app, &pane.style));
+            write!(screen, "{}", style_reset(app, &pane.style)).unwrap();
         }
         None => {}
     }

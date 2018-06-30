@@ -586,7 +586,7 @@ impl InputState {
         cmd
     }
 
-    fn vi_cmd_motion(
+    fn _vi_cmd_motion(
         &mut self,
         _wrt: &mut Refresher,
         key: KeyPress,
@@ -644,7 +644,7 @@ impl InputState {
         }
     }
 
-    fn vi_char_search(&mut self, ch: KeyPress, cmd: char) -> Option<CharSearch> {
+    fn _vi_char_search(&mut self, ch: KeyPress, cmd: char) -> Option<CharSearch> {
         match ch {
             KeyPress::Char(ch) => {
                 let cs = match cmd {
