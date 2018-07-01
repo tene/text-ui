@@ -37,12 +37,8 @@ impl Widget for App {
 }
 
 fn main() {
-    use text_ui::backend::composition::compose_image;
-    use text_ui::Size;
     let mut app = App::new();
     app.log.log_msg("asdf");
-    //let image = compose_image(app.render(), Size::new(100, 50));
-    //println!("{:?}", image);
     let mut be = Backend::new();
     be.run(app);
 }
