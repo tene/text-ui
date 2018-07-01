@@ -5,3 +5,4 @@ authors = ["Stephen Weeks <tene@allalone.org>"]
 
 [dependencies]
 termion = "*"
+unicode-segmentation = "1.2"

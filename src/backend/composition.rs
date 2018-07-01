@@ -6,8 +6,8 @@ fn compose_line(line: String, size: Size) -> Block {
     line.into()
 }
 
-fn compose_text(text: Vec<String>, size: Size) -> Block {
-    Block::from_text(text, size.cols, size.rows)
+fn compose_text(text: Vec<String>, size: Size, bound: Bound) -> Block {
+    Block::from_text(text, size.cols, size.rows, bound)
 }
 
 fn compose_vbox(elements: Vec<Element>, size: Size) -> Block {
@@ -42,7 +42,7 @@ fn compose_vbox(elements: Vec<Element>, size: Size) -> Block {
 pub fn compose_image(ui: Element, size: Size) -> Block {
     let block = match ui.content {
         Content::Line(line) => compose_line(line, size),
-        Content::Text(text) => compose_text(text, size),
+        Content::Text(text) => compose_text(text, size, ui.bounds.height),
         Content::VBox(elements) => compose_vbox(elements, size),
     };
     block

@@ -4,6 +4,7 @@ pub use termion::event::{Key, MouseButton, MouseEvent};
 #[derive(Debug, PartialEq)]
 pub enum UIEvent {
     Readline { source: String, line: String },
+    Exit,
 }
 
 // Maybe this should be done with From/Into instead?

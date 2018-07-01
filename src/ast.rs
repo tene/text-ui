@@ -1,29 +1,26 @@
 #[derive(Debug, PartialEq)]
 pub enum Bound {
-    Fixed(usize),
-    //AtLeast(usize),
-    //AtMost(usize),
-    //Range(usize, usize),
-    Free,
+    Fixed,
+    Greedy,
 }
 
 impl Default for Bound {
     fn default() -> Self {
-        Bound::Free
+        Bound::Greedy
     }
 }
 
 #[derive(Default, Debug, PartialEq)]
-pub struct Size {
+pub struct Bounds {
     pub width: Bound,
     pub height: Bound,
 }
 
-impl Size {
-    pub fn rows(n: usize) -> Size {
-        let width = Bound::Free;
-        let height = Bound::Fixed(n);
-        Size { width, height }
+impl Bounds {
+    pub fn fixed_height() -> Bounds {
+        let width = Bound::Greedy;
+        let height = Bound::Fixed;
+        Bounds { width, height }
     }
 }
 
@@ -40,25 +37,25 @@ pub struct Element {
     //pub widget: Option<String>,
     //pub name: Option<String>,
     // borders?
-    pub size: Size,
+    pub bounds: Bounds,
     pub content: Content,
 }
 
 impl Element {
     pub fn line(line: &str) -> Element {
-        let size = Size::rows(1);
+        let bounds = Bounds::fixed_height();
         let content = Content::Line(line.to_owned());
-        Element { size, content }
+        Element { bounds, content }
     }
     pub fn text(text: Vec<String>) -> Element {
-        let size = Size::default();
+        let bounds = Bounds::default();
         let content = Content::Text(text);
-        Element { size, content }
+        Element { bounds, content }
     }
     pub fn vbox(elems: Vec<Element>) -> Element {
-        let size = Size::default();
+        let bounds = Bounds::default();
         let content = Content::VBox(elems);
-        Element { size, content }
+        Element { bounds, content }
     }
 }
 

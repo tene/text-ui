@@ -1,6 +1,7 @@
 extern crate text_ui;
+use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
-use text_ui::{Element, Event, InputEvent, UIEvent, Widget};
+use text_ui::{Backend, Element, Event, InputEvent, UIEvent, Widget};
 
 #[derive(Debug)]
 struct App {
@@ -19,9 +20,11 @@ impl App {
 impl Widget for App {
     fn render(&self) -> Element {
         Element::vbox(vec![self.log.render(), self.rl.render()])
+        //Element::vbox(vec![self.rl.render(), self.log.render()])
     }
     fn handle_event(&mut self, event: &Event) -> Option<Event> {
         match event {
+            Event::Input(InputEvent::Key(Key::Esc)) => Some(Event::UI(UIEvent::Exit)),
             Event::Input(InputEvent::Key(_)) => self.rl.handle_event(event),
             Event::Input(InputEvent::Mouse(_)) => self.log.handle_event(event),
             Event::UI(UIEvent::Readline { source: _, line }) => {
@@ -34,7 +37,12 @@ impl Widget for App {
 }
 
 fn main() {
+    use text_ui::backend::composition::compose_image;
+    use text_ui::Size;
     let mut app = App::new();
     app.log.log_msg("asdf");
-    println!("{:#?}", app);
+    //let image = compose_image(app.render(), Size::new(100, 50));
+    //println!("{:?}", image);
+    let mut be = Backend::new();
+    be.run(app);
 }

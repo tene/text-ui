@@ -1,0 +1,8 @@
+Elements contain reference to widget
+input events propagated through the element tree into widgets
+this lets widgets know their size when being rendered, and lets ui events know which widget to propagate to due to position determined
+
+trait Application
+    pub fn handle_app_event
+    app_event must impl From<UIEvent>
+
