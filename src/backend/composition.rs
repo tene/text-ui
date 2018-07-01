@@ -44,6 +44,10 @@ pub fn compose_image(ui: Element, size: Size) -> Block {
         Content::Line(line) => compose_line(line, size),
         Content::Text(text) => compose_text(text, size, ui.bounds.height),
         Content::VBox(elements) => compose_vbox(elements, size),
+        Content::Proxy(proxy) => {
+            let ui = proxy.render();
+            compose_image(ui, size)
+        }
     };
     block
 }

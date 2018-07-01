@@ -1,3 +1,5 @@
+use {Shared, Widget};
+
 #[derive(Debug, PartialEq)]
 pub enum Bound {
     Fixed,
@@ -24,15 +26,16 @@ impl Bounds {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum Content {
     Line(String),
     Text(Vec<String>),
     VBox(Vec<Element>),
+    Proxy(Box<Widget>),
     //HBox(Vec<Element>),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Element {
     //pub widget: Option<String>,
     //pub name: Option<String>,
@@ -57,6 +60,12 @@ impl Element {
         let content = Content::VBox(elems);
         Element { bounds, content }
     }
+    pub fn proxy_shared<W: Widget + 'static>(proxy: &Shared<W>) -> Element {
+        let proxy = Box::new(proxy.clone());
+        let bounds = Bounds::default();
+        let content = Content::Proxy(proxy);
+        Element { bounds, content }
+    }
 }
 
 #[cfg(test)]
@@ -64,7 +73,5 @@ mod tests {
     #[test]
     fn it_works() {
         use super::{Content, Element};
-        let ex1 = Element::line("lol");
-        assert_eq!(ex1.content, Content::Line("lol".to_owned()));
     }
 }
