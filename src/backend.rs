@@ -11,10 +11,7 @@ use std::collections::VecDeque;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
 
-use {Bound, Element, Event, UIEvent, Widget};
-
-pub mod composition;
-use self::composition::compose_image;
+use {Bound, Event, RenderBackend, UIEvent, Widget};
 
 pub fn split_line_graphemes(line: &str, width: usize) -> Vec<String> {
     let mut letters: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
@@ -158,16 +155,16 @@ impl Backend {
         }
         self.screen.flush().unwrap();
     }
-    pub fn draw_ui(&mut self, ui: Element) {
-        let image = compose_image(ui, self.size.clone());
-        self.paint_image(image);
-    }
-    pub fn run(&mut self, mut app: impl Widget) {
+    pub fn run<B>(&mut self, mut app: impl Widget<B>)
+    where
+        B: RenderBackend,
+    {
         let stdin = stdin();
         let mut events = stdin.events();
         'outer: loop {
-            let ui = app.render();
-            self.draw_ui(ui);
+            //let ui = app.render();
+            let ui: Block = unimplemented!();
+            self.paint_image(ui);
             let mut event_buf: VecDeque<Event> = VecDeque::new();
             match events.next() {
                 Some(event) => event_buf.push_back(Event::Input(event.unwrap())),

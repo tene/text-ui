@@ -1,7 +1,9 @@
 extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
-use text_ui::{shared, Backend, Element, Event, InputEvent, Shared, UIEvent, Widget};
+use text_ui::{
+    shared, Backend, Event, InputEvent, RenderBackend, RenderContext, Shared, UIEvent, Widget,
+};
 
 #[derive(Debug)]
 struct App {
@@ -17,18 +19,15 @@ impl App {
     }
 }
 
-impl Widget for App {
-    fn render(&self) -> Element {
-        Element::vbox(vec![
-            Element::proxy_shared(&self.log),
-            Element::proxy_shared(&self.rl),
-        ])
+impl<B: RenderBackend> Widget<B> for App {
+    fn render(&self, mut ctx: B::Context) -> B::Element {
+        ctx.vbox(vec![&self.log, &self.rl])
     }
     fn handle_event(&mut self, event: &Event) -> Option<Event> {
         match event {
             Event::Input(InputEvent::Key(Key::Esc)) => Some(Event::UI(UIEvent::Exit)),
-            Event::Input(InputEvent::Key(_)) => self.rl.write().unwrap().handle_event(event),
-            Event::Input(InputEvent::Mouse(_)) => self.log.write().unwrap().handle_event(event),
+            //Event::Input(InputEvent::Key(_)) => self.rl.handle_event(event),
+            //Event::Input(InputEvent::Mouse(_)) => self.log.handle_event(event),
             Event::UI(UIEvent::Readline { source: _, line }) => {
                 self.log.write().unwrap().log_msg(line);
                 None
@@ -42,5 +41,5 @@ fn main() {
     let app = App::new();
     app.log.write().unwrap().log_msg("asdf");
     let mut be = Backend::new();
-    be.run(app);
+    //be.run(app);
 }

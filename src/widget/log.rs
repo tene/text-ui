@@ -1,5 +1,5 @@
 use input::{MouseButton, MouseEvent};
-use {Element, Event, InputEvent, Widget};
+use {Event, InputEvent, RenderBackend, RenderContext, Widget};
 
 #[derive(Debug)]
 pub struct Log {
@@ -24,9 +24,12 @@ impl Log {
     }
 }
 
-impl Widget for Log {
-    fn render(&self) -> Element {
-        Element::text(self.lines.clone())
+impl<B> Widget<B> for Log
+where
+    B: RenderBackend,
+{
+    fn render(&self, mut ctx: B::Context) -> B::Element {
+        ctx.text(self.lines.clone())
     }
     fn handle_event(&mut self, event: &Event) -> Option<Event> {
         match event {
