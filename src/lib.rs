@@ -5,6 +5,7 @@ extern crate unicode_segmentation;
 use std::sync::{Arc, RwLock};
 
 pub mod backend;
+mod indextree;
 pub mod input;
 pub mod widget;
 
