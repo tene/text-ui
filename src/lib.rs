@@ -8,7 +8,7 @@ pub mod backend;
 pub mod input;
 pub mod widget;
 
-pub use backend::{Backend, Size};
+pub use backend::{Size, TermionBackend};
 pub use input::{Event, InputEvent, MouseEvent, UIEvent};
 pub use widget::{RenderBackend, RenderContext, RenderElement, Widget};
 
@@ -18,27 +18,32 @@ pub fn shared<T>(item: T) -> Shared<T> {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum Bound {
-    Fixed,
+pub enum GrowthPolicy {
+    FixedSize,
     Greedy,
 }
 
-impl Default for Bound {
+impl Default for GrowthPolicy {
     fn default() -> Self {
-        Bound::Greedy
+        GrowthPolicy::Greedy
     }
 }
 
 #[derive(Default, Debug, PartialEq)]
-pub struct Bounds {
-    pub width: Bound,
-    pub height: Bound,
+pub struct FullGrowthPolicy {
+    pub width: GrowthPolicy,
+    pub height: GrowthPolicy,
 }
 
-impl Bounds {
-    pub fn fixed_height() -> Bounds {
-        let width = Bound::Greedy;
-        let height = Bound::Fixed;
-        Bounds { width, height }
+impl FullGrowthPolicy {
+    pub fn fixed_height() -> FullGrowthPolicy {
+        let width = GrowthPolicy::Greedy;
+        let height = GrowthPolicy::FixedSize;
+        FullGrowthPolicy { width, height }
+    }
+    pub fn fixed_width() -> FullGrowthPolicy {
+        let width = GrowthPolicy::FixedSize;
+        let height = GrowthPolicy::Greedy;
+        FullGrowthPolicy { width, height }
     }
 }

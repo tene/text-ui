@@ -1,5 +1,5 @@
 use input::Key;
-use {Event, InputEvent, RenderBackend, RenderContext, Widget};
+use {Event, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, Widget};
 
 #[derive(Debug)]
 pub struct Readline {
@@ -41,5 +41,8 @@ where
             },
             _ => None,
         }
+    }
+    fn growth_policy(&self) -> FullGrowthPolicy {
+        FullGrowthPolicy::fixed_height()
     }
 }

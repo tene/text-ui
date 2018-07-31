@@ -7,18 +7,24 @@ pub mod readline;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use Shared;
+use {FullGrowthPolicy, Shared};
 
 pub trait RenderContext<B>
 where
     B: RenderBackend,
 {
+    //fn constraints()
+    //fn render_widget?  // break cycle by returning different types?
+    //fn line constraintwidth?
     fn line(&mut self, &str) -> B::Element;
     fn text(&mut self, Vec<String>) -> B::Element;
     fn vbox(&mut self, Vec<&dyn Widget<B>>) -> B::Element;
 }
 
-pub trait RenderElement {}
+pub trait RenderElement {
+    //fn size(&self) -> Size;
+    //fn focus(&mut self, impl Fn InputEvent) -> should_propagate  // Handle per-Widget events (form submission) with listener callbacks?
+}
 
 pub trait RenderBackend: Sized {
     type Context: RenderContext<Self>;
@@ -30,7 +36,11 @@ where
     B: RenderBackend,
 {
     fn render(&self, B::Context) -> B::Element;
-    fn handle_event(&mut self, &Event) -> Option<Event>;
+    fn handle_event(&mut self, &Event) -> Option<Event>; // drop in favor of renderelement focus
+
+    fn growth_policy(&self) -> FullGrowthPolicy {
+        FullGrowthPolicy::default()
+    }
 }
 
 impl<W, B> Widget<B> for Shared<W>
@@ -44,35 +54,7 @@ where
     fn handle_event(&mut self, event: &Event) -> Option<Event> {
         self.write().unwrap().handle_event(event)
     }
+    fn growth_policy(&self) -> FullGrowthPolicy {
+        self.read().unwrap().growth_policy()
+    }
 }
-
-/*
-fn compose_vbox(elements: Vec<Element>, size: Size) -> Block {
-    let (fixed, greedy): (Vec<(usize, Element)>, Vec<(usize, Element)>) = elements
-        .into_iter()
-        .enumerate()
-        .partition(|(_, e)| e.bounds.height == Bound::Fixed);
-    let mut remaining_rows = size.rows;
-    let cols = size.cols;
-    let greedy_count = greedy.len();
-    let mut blocks: Vec<(usize, Block)> = fixed
-        .into_iter()
-        .map(|(i, e)| {
-            let b = compose_image(e, Size::new(cols, remaining_rows));
-            remaining_rows -= b.height;
-            (i, b)
-        })
-        .collect();
-    blocks.extend(greedy.into_iter().map(|(i, e)| {
-        let b = compose_image(e, Size::new(cols, remaining_rows / greedy_count));
-        remaining_rows -= b.height;
-        (i, b)
-    }));
-    blocks.sort_by_key(|a| a.0);
-    let init = Block::new(vec![], cols, 0);
-    blocks.into_iter().fold(init, |mut acc, (_, b)| {
-        acc.vconcat(b);
-        acc
-    })
-}
-*/

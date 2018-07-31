@@ -2,7 +2,8 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, Backend, Event, InputEvent, RenderBackend, RenderContext, Shared, UIEvent, Widget,
+    shared, Event, InputEvent, RenderBackend, RenderContext, Shared, TermionBackend, UIEvent,
+    Widget,
 };
 
 #[derive(Debug)]
@@ -40,6 +41,6 @@ impl<B: RenderBackend> Widget<B> for App {
 fn main() {
     let app = App::new();
     app.log.write().unwrap().log_msg("asdf");
-    let mut be = Backend::new();
-    //be.run(app);
+    let mut be = TermionBackend::new();
+    be.run(app);
 }

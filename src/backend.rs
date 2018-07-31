@@ -11,7 +11,7 @@ use std::collections::VecDeque;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
 
-use {Bound, Event, RenderBackend, UIEvent, Widget};
+use {Event, GrowthPolicy, RenderBackend, RenderContext, RenderElement, UIEvent, Widget};
 
 pub fn split_line_graphemes(line: &str, width: usize) -> Vec<String> {
     let mut letters: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
@@ -82,14 +82,27 @@ impl Block {
             height,
         }
     }
-    pub fn from_text(text: Vec<String>, width: usize, height: usize, should_grow: Bound) -> Self {
+    pub fn line(text: &str, width: usize) -> Self {
+        let line: Line = Span::from_str("".to_owned(), text, width).into();
+        Block {
+            lines: vec![line],
+            width: width,
+            height: 1,
+        }
+    }
+    pub fn from_text(
+        text: Vec<String>,
+        width: usize,
+        height: usize,
+        should_grow: GrowthPolicy,
+    ) -> Self {
         let lines = text
             .into_iter()
             .flat_map(|l| split_line_graphemes(&l, width).into_iter())
             .map(|l| Span::new("".to_owned(), l, width).into());
         let lines: Vec<Line> = match should_grow {
-            Bound::Fixed => lines.take(height).collect(),
-            Bound::Greedy => lines
+            GrowthPolicy::FixedSize => lines.take(height).collect(),
+            GrowthPolicy::Greedy => lines
                 .chain(repeat(Span::from_str("".to_owned(), "", width).into()))
                 .take(height)
                 .collect(),
@@ -133,17 +146,17 @@ impl Size {
     }
 }
 
-pub struct Backend {
+pub struct TermionBackend {
     screen: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
     pub size: Size,
 }
 
-impl Backend {
+impl TermionBackend {
     pub fn new() -> Self {
         let screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
         let (width, height) = termion::terminal_size().unwrap();
         let size = Size::new(width as usize, height as usize);
-        Backend { size, screen }
+        TermionBackend { size, screen }
     }
     fn paint_image(&mut self, image: Block) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
@@ -155,15 +168,12 @@ impl Backend {
         }
         self.screen.flush().unwrap();
     }
-    pub fn run<B>(&mut self, mut app: impl Widget<B>)
-    where
-        B: RenderBackend,
-    {
+    pub fn run(&mut self, mut app: impl Widget<Self>) {
         let stdin = stdin();
         let mut events = stdin.events();
         'outer: loop {
             //let ui = app.render();
-            let ui: Block = unimplemented!();
+            let ui: Block = app.render(TermionContext::new(self.size.clone()));
             self.paint_image(ui);
             let mut event_buf: VecDeque<Event> = VecDeque::new();
             match events.next() {
@@ -180,4 +190,77 @@ impl Backend {
             }
         }
     }
+}
+
+#[derive(Clone)]
+pub struct TermionContext {
+    size: Size,
+}
+
+impl TermionContext {
+    fn new(size: Size) -> Self {
+        TermionContext { size }
+    }
+    fn with_rows(&self, rows: usize) -> Self {
+        let cols = self.size.cols;
+        let size = Size { rows, cols };
+        TermionContext { size }
+    }
+    fn with_cols(&self, cols: usize) -> Self {
+        let rows = self.size.rows;
+        let size = Size { rows, cols };
+        TermionContext { size }
+    }
+}
+
+impl RenderContext<TermionBackend> for TermionContext {
+    fn line(&mut self, content: &str) -> Block {
+        Block::line(content, self.size.cols)
+    }
+    fn text(&mut self, content: Vec<String>) -> Block {
+        Block::from_text(
+            content,
+            self.size.cols,
+            self.size.rows,
+            GrowthPolicy::FixedSize,
+        )
+    }
+    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend>>) -> Block {
+        let (fixed, greedy): (
+            Vec<(usize, &dyn Widget<TermionBackend>)>,
+            Vec<(usize, &dyn Widget<TermionBackend>)>,
+        ) = widgets
+            .into_iter()
+            .enumerate()
+            .partition(|(_, w)| w.growth_policy().height == GrowthPolicy::FixedSize);
+        let mut remaining_rows = self.size.rows;
+        let cols = self.size.cols;
+        let greedy_count = greedy.len();
+        let mut blocks: Vec<(usize, Block)> = fixed
+            .into_iter()
+            .map(|(i, w)| {
+                let b = w.render(self.with_rows(remaining_rows));
+                remaining_rows -= b.height;
+                (i, b)
+            })
+            .collect();
+        blocks.extend(greedy.into_iter().map(|(i, w)| {
+            let b = w.render(self.with_rows(remaining_rows / greedy_count));
+            remaining_rows -= b.height;
+            (i, b)
+        }));
+        blocks.sort_by_key(|a| a.0);
+        let init = Block::new(vec![], cols, 0);
+        blocks.into_iter().fold(init, |mut acc, (_, b)| {
+            acc.vconcat(b);
+            acc
+        })
+    }
+}
+
+impl RenderElement for Block {}
+
+impl RenderBackend for TermionBackend {
+    type Context = TermionContext;
+    type Element = Block;
 }
