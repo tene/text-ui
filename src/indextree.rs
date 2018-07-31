@@ -5,7 +5,7 @@ pub struct IndexTree<N, I>
 where
     N: Eq + Hash,
 {
-    leaves: HashMap<N, usize>,
+    leaves: HashMap<N, usize>, // Needs to be renamed to something accurate
     roots: HashSet<usize>,
     items: Vec<I>,
     parents: Vec<Option<usize>>,
@@ -32,19 +32,19 @@ where
         self.items.push(item);
         self.parents.push(None);
         let idx = self.items.len() - 1;
-        self.leaves.insert(name, idx);
+        self.leaves.insert(name, idx); // Need to handle name collisions
         for i in self.roots.drain() {
             self.parents[i] = Some(idx);
         }
         self.roots.insert(idx);
     }
 
-    pub fn append(&mut self, mut other: Self) {
+    pub fn append(&mut self, other: &mut Self) {
         let offset = self.items.len();
         self.items.extend(other.items.drain(..));
         self.roots.extend(other.roots.drain().map(|r| r + offset));
         self.leaves
-            .extend(other.leaves.drain().map(|(k, v)| (k, v + offset)));
+            .extend(other.leaves.drain().map(|(k, v)| (k, v + offset))); // Need to handle name collisions
         self.parents
             .extend(other.parents.drain(..).map(|p| p.map(|i| i + offset)));
     }

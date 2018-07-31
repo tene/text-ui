@@ -23,8 +23,8 @@ where
 
 pub trait RenderElement {
     //fn size(&self) -> Size;
-    //fn focus(&mut self, impl Fn InputEvent) -> should_propagate  // Handle per-Widget events (form submission) with listener callbacks?
-    fn add_input_handler(&mut self, name: &str, callback: impl FnMut(&Event) -> bool); // swap bool for ADT, swap name for generic
+    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&Event) -> bool>); // swap bool for ADT, swap name for generic
+    fn handle_input(&self, String, &Event); // Need to swap String as name out for generic
 }
 
 pub trait RenderBackend: Sized {

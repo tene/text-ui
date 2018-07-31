@@ -13,6 +13,8 @@ use std::iter::repeat;
 
 use {Event, GrowthPolicy, RenderBackend, RenderContext, RenderElement, UIEvent, Widget};
 
+use indextree::IndexTree;
+
 pub fn split_line_graphemes(line: &str, width: usize) -> Vec<String> {
     let mut letters: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
     let len = letters.len();
@@ -71,18 +73,29 @@ pub struct Block {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
+    pub callbacks: IndexTree<String, Box<Fn(&Event) -> bool>>,
     //pub callbacks: Vec<Box<FnMut(&Event) -> bool>>, // XXX TODO This needs to be an indextree, and we need a way to merge indextrees
     // XXX TODO Pair this with a HashMap of Name -> Index
 }
 
 impl RenderElement for Block {
-    fn add_input_handler(&mut self, name: &str, callback: impl FnMut(&Event) -> bool) {}
+    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&Event) -> bool>) {
+        self.callbacks.push(name.to_owned(), callback)
+    }
+    fn handle_input(&self, name: String, event: &Event) {
+        for cb in self.callbacks.get_iter(&name) {
+            match (cb)(event) {
+                true => break,
+                false => continue,
+            }
+        }
+    }
 }
 
 impl Block {
     pub fn new(lines: Vec<Line>, width: usize, height: usize) -> Self {
         Block {
-            //callbacks: vec![],
+            callbacks: IndexTree::new(),
             lines,
             width,
             height,
@@ -115,6 +128,8 @@ impl Block {
     pub fn vconcat(&mut self, mut other: Self) {
         assert_eq!(self.width, other.width);
         self.lines.append(&mut other.lines);
+        // map callback position
+        self.callbacks.append(&mut other.callbacks);
         self.height += other.height;
     }
 }
