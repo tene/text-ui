@@ -22,7 +22,8 @@ where
     B: RenderBackend,
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
-        ctx.line(&self.line)
+        //ctx.line(&self.line)
+        ctx.line(&format!("> {:?}", self))
     }
     fn handle_event(&mut self, event: &Event) -> (Option<Event>) {
         match event {

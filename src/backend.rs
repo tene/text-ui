@@ -67,16 +67,22 @@ impl From<Span> for Line {
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct Block {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
+    //pub callbacks: Vec<Box<FnMut(&Event) -> bool>>, // XXX TODO This needs to be an indextree, and we need a way to merge indextrees
+    // XXX TODO Pair this with a HashMap of Name -> Index
+}
+
+impl RenderElement for Block {
+    fn add_input_handler(&mut self, name: &str, callback: impl FnMut(&Event) -> bool) {}
 }
 
 impl Block {
     pub fn new(lines: Vec<Line>, width: usize, height: usize) -> Self {
         Block {
+            //callbacks: vec![],
             lines,
             width,
             height,
@@ -84,11 +90,7 @@ impl Block {
     }
     pub fn line(text: &str, width: usize) -> Self {
         let line: Line = Span::from_str("".to_owned(), text, width).into();
-        Block {
-            lines: vec![line],
-            width: width,
-            height: 1,
-        }
+        Block::new(vec![line], width, 1)
     }
     pub fn from_text(
         text: Vec<String>,
@@ -108,11 +110,7 @@ impl Block {
                 .collect(),
         };
         let height = lines.len();
-        Block {
-            lines,
-            width,
-            height,
-        }
+        Block::new(lines, width, height)
     }
     pub fn vconcat(&mut self, mut other: Self) {
         assert_eq!(self.width, other.width);
@@ -126,11 +124,7 @@ impl From<Line> for Block {
         let width = line.width;
         let height = 1;
         let lines = vec![line];
-        Block {
-            width,
-            height,
-            lines,
-        }
+        Block::new(lines, width, height)
     }
 }
 
@@ -222,7 +216,7 @@ impl RenderContext<TermionBackend> for TermionContext {
             content,
             self.size.cols,
             self.size.rows,
-            GrowthPolicy::FixedSize,
+            GrowthPolicy::Greedy,
         )
     }
     fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend>>) -> Block {
@@ -257,8 +251,6 @@ impl RenderContext<TermionBackend> for TermionContext {
         })
     }
 }
-
-impl RenderElement for Block {}
 
 impl RenderBackend for TermionBackend {
     type Context = TermionContext;
