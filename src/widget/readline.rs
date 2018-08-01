@@ -1,11 +1,40 @@
 use input::Key;
-use {Event, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, Widget};
+use {
+    shared, Event, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
+    Shared, Widget,
+};
+
+#[derive(Debug)]
+struct ReadlineInner {
+    pub line: String,
+    pub index: usize,
+}
+
+impl ReadlineInner {
+    pub fn handle_event(&mut self, event: &Event) -> bool {
+        match event {
+            Event::Input(event) => match event {
+                InputEvent::Key(Key::Char('\n')) => {
+                    self.index = 0;
+                    let line = self.line.split_off(0);
+                    true
+                }
+                InputEvent::Key(Key::Char(ch)) => {
+                    self.line.insert(self.index, *ch);
+                    self.index += 1;
+                    true
+                }
+                _ => false,
+            },
+            _ => false,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Readline {
     pub name: String,
-    pub line: String,
-    pub index: usize,
+    inner: Shared<ReadlineInner>,
 }
 
 impl Readline {
@@ -13,7 +42,8 @@ impl Readline {
         let line = String::new();
         let index = 0;
         let name = name.to_owned();
-        Readline { name, line, index }
+        let inner = shared(ReadlineInner { line, index });
+        Readline { name, inner }
     }
 }
 
@@ -23,25 +53,13 @@ where
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         //ctx.line(&self.line)
-        ctx.line(&format!("> {:?}", self))
-    }
-    fn handle_event(&mut self, event: &Event) -> (Option<Event>) {
-        match event {
-            Event::Input(event) => match event {
-                InputEvent::Key(Key::Char('\n')) => {
-                    self.index = 0;
-                    let line = self.line.split_off(0);
-                    Some(Event::readline(self.name.clone(), line))
-                }
-                InputEvent::Key(Key::Char(ch)) => {
-                    self.line.insert(self.index, *ch);
-                    self.index += 1;
-                    None
-                }
-                _ => None,
-            },
-            _ => None,
-        }
+        let inner = self.inner.clone();
+        let mut line = ctx.line(&format!("> {:?}", self));
+        line.add_input_handler(
+            &self.name,
+            Box::new(move |e| inner.write().unwrap().handle_event(e)),
+        );
+        line
     }
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::fixed_height()

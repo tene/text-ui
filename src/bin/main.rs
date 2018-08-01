@@ -24,7 +24,7 @@ impl<B: RenderBackend> Widget<B> for App {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         ctx.vbox(vec![&self.log, &self.rl])
     }
-    fn handle_event(&mut self, event: &Event) -> Option<Event> {
+    /*fn handle_event(&mut self, event: &Event) -> Option<Event> {
         match event {
             Event::Input(InputEvent::Key(Key::Esc)) => Some(Event::UI(UIEvent::Exit)),
             //Event::Input(InputEvent::Key(_)) => self.rl.handle_event(event),
@@ -35,7 +35,7 @@ impl<B: RenderBackend> Widget<B> for App {
             }
             _ => None,
         }
-    }
+    }*/
 }
 
 fn main() {

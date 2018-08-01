@@ -11,7 +11,10 @@ use std::collections::VecDeque;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
 
-use {Event, GrowthPolicy, RenderBackend, RenderContext, RenderElement, UIEvent, Widget};
+use {
+    input::Key, Event, GrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
+    UIEvent, Widget,
+};
 
 use indextree::IndexTree;
 
@@ -74,8 +77,6 @@ pub struct Block {
     pub width: usize,
     pub height: usize,
     pub callbacks: IndexTree<String, Box<Fn(&Event) -> bool>>,
-    //pub callbacks: Vec<Box<FnMut(&Event) -> bool>>, // XXX TODO This needs to be an indextree, and we need a way to merge indextrees
-    // XXX TODO Pair this with a HashMap of Name -> Index
 }
 
 impl RenderElement for Block {
@@ -167,11 +168,11 @@ impl TermionBackend {
         let size = Size::new(width as usize, height as usize);
         TermionBackend { size, screen }
     }
-    fn paint_image(&mut self, image: Block) {
+    fn paint_image(&mut self, image: &Block) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
-        for (i, line) in image.lines.into_iter().enumerate() {
+        for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
-            for span in line.spans.into_iter() {
+            for span in line.spans.iter() {
                 write!(self.screen, "{}", span.text).unwrap();
             }
         }
@@ -183,19 +184,28 @@ impl TermionBackend {
         'outer: loop {
             //let ui = app.render();
             let ui: Block = app.render(TermionContext::new(self.size.clone()));
-            self.paint_image(ui);
+            self.paint_image(&ui);
             let mut event_buf: VecDeque<Event> = VecDeque::new();
             match events.next() {
-                Some(event) => event_buf.push_back(Event::Input(event.unwrap())),
+                Some(Ok(InputEvent::Key(Key::Esc))) => break,
+                Some(event) => {
+                    let event = Event::Input(event.unwrap());
+                    for cb in ui.callbacks.get_iter(&"input".to_owned()) {
+                        match cb(&event) {
+                            true => break,
+                            false => continue,
+                        }
+                    }
+                }
                 None => break,
             }
             while !event_buf.is_empty() {
                 let event = event_buf.pop_front().unwrap();
-                match app.handle_event(&event) {
+                /*match app.handle_event(&event) {
                     None => {}
                     Some(Event::UI(UIEvent::Exit)) => break 'outer,
                     Some(e) => event_buf.push_back(e),
-                };
+                };*/
             }
         }
     }

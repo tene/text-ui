@@ -31,7 +31,7 @@ where
     fn render(&self, mut ctx: B::Context) -> B::Element {
         ctx.text(self.lines.clone())
     }
-    fn handle_event(&mut self, event: &Event) -> Option<Event> {
+    /*fn handle_event(&mut self, event: &Event) -> Option<Event> {
         match event {
             Event::Input(InputEvent::Mouse(MouseEvent::Press(btn, _, _))) => {
                 match btn {
@@ -45,5 +45,5 @@ where
             _ => {}
         }
         None
-    }
+    }*/
 }

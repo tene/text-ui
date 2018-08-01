@@ -37,7 +37,6 @@ where
     B: RenderBackend,
 {
     fn render(&self, B::Context) -> B::Element;
-    fn handle_event(&mut self, &Event) -> Option<Event>; // drop in favor of renderelement focus
 
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::default()
@@ -51,9 +50,6 @@ where
 {
     fn render(&self, ctx: B::Context) -> B::Element {
         self.read().unwrap().render(ctx)
-    }
-    fn handle_event(&mut self, event: &Event) -> Option<Event> {
-        self.write().unwrap().handle_event(event)
     }
     fn growth_policy(&self) -> FullGrowthPolicy {
         self.read().unwrap().growth_policy()
