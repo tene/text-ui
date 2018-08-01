@@ -1,6 +1,11 @@
 pub use termion::event::Event as InputEvent;
 pub use termion::event::{Key, MouseButton, MouseEvent};
 
+/*
+XXX UGH
+These two need to be completely separate types, handled separately
+*/
+
 #[derive(Debug, PartialEq)]
 pub enum UIEvent {
     Readline { source: String, line: String },

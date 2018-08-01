@@ -1,5 +1,6 @@
 use input::Event;
 use std::fmt::Debug;
+use std::sync::mpsc::Sender;
 
 pub mod log;
 pub mod readline;
@@ -19,6 +20,17 @@ where
     fn line(&mut self, &str) -> B::Element;
     fn text(&mut self, Vec<String>) -> B::Element;
     fn vbox(&mut self, Vec<&dyn Widget<B>>) -> B::Element;
+    fn event_sender(&self) -> Sender<Event>;
+}
+
+enum ShouldRedraw {
+    PleaseRedraw,
+    NoRedrawNeeded,
+}
+
+enum InputHandleResult {
+    Ignored,
+    Handled(ShouldRedraw),
 }
 
 pub trait RenderElement {

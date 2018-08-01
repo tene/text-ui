@@ -10,6 +10,8 @@ use unicode_segmentation::UnicodeSegmentation;
 use std::collections::VecDeque;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::thread;
 
 use {
     input::Key, Event, GrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
@@ -159,6 +161,8 @@ impl Size {
 pub struct TermionBackend {
     screen: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
     pub size: Size,
+    receiver: Receiver<Event>,
+    sender: Sender<Event>,
 }
 
 impl TermionBackend {
@@ -166,7 +170,13 @@ impl TermionBackend {
         let screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
         let (width, height) = termion::terminal_size().unwrap();
         let size = Size::new(width as usize, height as usize);
-        TermionBackend { size, screen }
+        let (sender, receiver) = channel();
+        TermionBackend {
+            size,
+            screen,
+            sender,
+            receiver,
+        }
     }
     fn paint_image(&mut self, image: &Block) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
@@ -179,33 +189,42 @@ impl TermionBackend {
         self.screen.flush().unwrap();
     }
     pub fn run(&mut self, mut app: impl Widget<Self>) {
-        let stdin = stdin();
-        let mut events = stdin.events();
+        // UGH disentangle input, control commands, and "app" events
+        let sender = self.sender.clone();
+        thread::spawn(move || {
+            /*let stdin = stdin();
+            let mut events = stdin.events();*/
+            'outer: loop {
+                for event in stdin().events() {
+                    match sender.send(Event::Input(event.unwrap())) {
+                        Ok(()) => continue,
+                        Err(_) => break 'outer,
+                    }
+                }
+            }
+        });
         'outer: loop {
             //let ui = app.render();
-            let ui: Block = app.render(TermionContext::new(self.size.clone()));
+            let ui: Block = app.render(TermionContext::new(self.size.clone(), self.sender.clone()));
             self.paint_image(&ui);
-            let mut event_buf: VecDeque<Event> = VecDeque::new();
-            match events.next() {
-                Some(Ok(InputEvent::Key(Key::Esc))) => break,
-                Some(event) => {
-                    let event = Event::Input(event.unwrap());
-                    for cb in ui.callbacks.get_iter(&"input".to_owned()) {
-                        match cb(&event) {
-                            true => break,
-                            false => continue,
+            {
+                // LOL wait until an event before doing anything this is a dumb hack
+                let event = self.receiver.recv().unwrap();
+                self.sender.send(event);
+            }
+            for event in self.receiver.try_iter() {
+                match event {
+                    Event::UI(UIEvent::Exit) => break 'outer,
+                    _ => {
+                        let mut i = 0;
+                        for cb in ui.callbacks.get_iter(&"input".to_owned()) {
+                            match cb(&event) {
+                                true => break,
+                                false => continue,
+                            }
                         }
                     }
                 }
-                None => break,
-            }
-            while !event_buf.is_empty() {
-                let event = event_buf.pop_front().unwrap();
-                /*match app.handle_event(&event) {
-                    None => {}
-                    Some(Event::UI(UIEvent::Exit)) => break 'outer,
-                    Some(e) => event_buf.push_back(e),
-                };*/
             }
         }
     }
@@ -214,21 +233,24 @@ impl TermionBackend {
 #[derive(Clone)]
 pub struct TermionContext {
     size: Size,
+    sender: Sender<Event>,
 }
 
 impl TermionContext {
-    fn new(size: Size) -> Self {
-        TermionContext { size }
+    fn new(size: Size, sender: Sender<Event>) -> Self {
+        TermionContext { size, sender }
     }
     fn with_rows(&self, rows: usize) -> Self {
         let cols = self.size.cols;
         let size = Size { rows, cols };
-        TermionContext { size }
+        let sender = self.sender.clone();
+        TermionContext { size, sender }
     }
     fn with_cols(&self, cols: usize) -> Self {
         let rows = self.size.rows;
         let size = Size { rows, cols };
-        TermionContext { size }
+        let sender = self.sender.clone();
+        TermionContext { size, sender }
     }
 }
 
@@ -274,6 +296,9 @@ impl RenderContext<TermionBackend> for TermionContext {
             acc.vconcat(b);
             acc
         })
+    }
+    fn event_sender(&self) -> Sender<Event> {
+        self.sender.clone()
     }
 }
 

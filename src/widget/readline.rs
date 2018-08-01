@@ -1,4 +1,5 @@
 use input::Key;
+use std::sync::mpsc::Sender;
 use {
     shared, Event, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
     Shared, Widget,
@@ -11,22 +12,23 @@ struct ReadlineInner {
 }
 
 impl ReadlineInner {
-    pub fn handle_event(&mut self, event: &Event) -> bool {
+    pub fn handle_event(&mut self, event: &Event) -> (bool, Option<String>) {
         match event {
             Event::Input(event) => match event {
                 InputEvent::Key(Key::Char('\n')) => {
                     self.index = 0;
                     let line = self.line.split_off(0);
-                    true
+                    (true, Some(line))
                 }
                 InputEvent::Key(Key::Char(ch)) => {
                     self.line.insert(self.index, *ch);
                     self.index += 1;
-                    true
+                    (true, None)
                 }
-                _ => false,
+                InputEvent::Key(Key::Esc) => (false, None),
+                _ => (false, None),
             },
-            _ => false,
+            _ => (false, None),
         }
     }
 }
@@ -52,12 +54,19 @@ where
     B: RenderBackend,
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
-        //ctx.line(&self.line)
         let inner = self.inner.clone();
-        let mut line = ctx.line(&format!("> {:?}", self));
+        let sender = ctx.event_sender();
+        let name = self.name.clone();
+        let mut line = ctx.line(&format!("{}", inner.read().unwrap().line));
         line.add_input_handler(
             &self.name,
-            Box::new(move |e| inner.write().unwrap().handle_event(e)),
+            Box::new(move |e| {
+                let (rv, line) = inner.write().unwrap().handle_event(e);
+                if let Some(line) = line {
+                    let _ = sender.send(Event::readline(name.clone(), line)); // UGH this is gross RL should have its own callbacks
+                };
+                rv
+            }),
         );
         line
     }
