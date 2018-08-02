@@ -7,15 +7,13 @@ use termion::screen::AlternateScreen;
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use std::collections::VecDeque;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    input::Key, Event, GrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
-    UIEvent, Widget,
+    Event, GrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement, UIEvent, Widget,
 };
 
 use indextree::IndexTree;
@@ -78,14 +76,14 @@ pub struct Block {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<String, Box<Fn(&Event) -> bool>>,
+    pub callbacks: IndexTree<String, Box<Fn(&InputEvent) -> bool>>,
 }
 
 impl RenderElement for Block {
-    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&Event) -> bool>) {
+    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&InputEvent) -> bool>) {
         self.callbacks.push(name.to_owned(), callback)
     }
-    fn handle_input(&self, name: String, event: &Event) {
+    fn handle_input(&self, name: String, event: &InputEvent) {
         for cb in self.callbacks.get_iter(&name) {
             match (cb)(event) {
                 true => break,
@@ -188,7 +186,7 @@ impl TermionBackend {
         }
         self.screen.flush().unwrap();
     }
-    pub fn run(&mut self, mut app: impl Widget<Self>) {
+    pub fn run(&mut self, app: impl Widget<Self>) {
         // UGH disentangle input, control commands, and "app" events
         let sender = self.sender.clone();
         thread::spawn(move || {
@@ -204,19 +202,17 @@ impl TermionBackend {
             }
         });
         'outer: loop {
-            //let ui = app.render();
             let ui: Block = app.render(TermionContext::new(self.size.clone(), self.sender.clone()));
             self.paint_image(&ui);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
                 let event = self.receiver.recv().unwrap();
-                self.sender.send(event);
+                let _ = self.sender.send(event);
             }
             for event in self.receiver.try_iter() {
                 match event {
                     Event::UI(UIEvent::Exit) => break 'outer,
-                    _ => {
-                        let mut i = 0;
+                    Event::Input(event) => {
                         for cb in ui.callbacks.get_iter(&"input".to_owned()) {
                             match cb(&event) {
                                 true => break,
@@ -246,7 +242,7 @@ impl TermionContext {
         let sender = self.sender.clone();
         TermionContext { size, sender }
     }
-    fn with_cols(&self, cols: usize) -> Self {
+    fn _with_cols(&self, cols: usize) -> Self {
         let rows = self.size.rows;
         let size = Size { rows, cols };
         let sender = self.sender.clone();

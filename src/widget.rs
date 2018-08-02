@@ -1,4 +1,4 @@
-use input::Event;
+use input::{Event, InputEvent};
 use std::fmt::Debug;
 use std::sync::mpsc::Sender;
 
@@ -23,20 +23,20 @@ where
     fn event_sender(&self) -> Sender<Event>;
 }
 
-enum ShouldRedraw {
+enum _ShouldRedraw {
     PleaseRedraw,
     NoRedrawNeeded,
 }
 
-enum InputHandleResult {
+enum _InputHandleResult {
     Ignored,
-    Handled(ShouldRedraw),
+    Handled(_ShouldRedraw),
 }
 
 pub trait RenderElement {
     //fn size(&self) -> Size;
-    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&Event) -> bool>); // swap bool for ADT, swap name for generic
-    fn handle_input(&self, String, &Event); // Need to swap String as name out for generic
+    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&InputEvent) -> bool>); // swap bool for ADT, swap name for generic
+    fn handle_input(&self, String, &InputEvent); // Need to swap String as name out for generic
 }
 
 pub trait RenderBackend: Sized {

@@ -2,20 +2,30 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, Event, InputEvent, RenderBackend, RenderContext, RenderElement, Shared, TermionBackend,
-    UIEvent, Widget,
+    shared, widget::readline::ReadlineEvent, Event, InputEvent, RenderBackend, RenderContext,
+    RenderElement, Shared, TermionBackend, UIEvent, Widget,
 };
 
 #[derive(Debug)]
 struct App {
     pub log: Shared<Log>,
-    pub rl: Shared<Readline>,
+    pub rl: Readline,
 }
 
 impl App {
     pub fn new() -> Self {
         let log = shared(Log::new());
-        let rl = shared(Readline::new("input"));
+        let logref = log.clone();
+        let mut rl = Readline::new("input");
+        rl.add_listener(Box::new(move |e| match e {
+            ReadlineEvent::Submitted { name: _, line } => match logref.write() {
+                Ok(mut log) => {
+                    log.log_msg(line);
+                    true
+                }
+                Err(_) => false,
+            },
+        }));
         App { log, rl }
     }
 }
@@ -23,17 +33,12 @@ impl App {
 impl<B: RenderBackend> Widget<B> for App {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         let sender = ctx.event_sender();
-        let log = self.log.clone();
         let mut app = ctx.vbox(vec![&self.log, &self.rl]);
         app.add_input_handler(
             "app",
             Box::new(move |e| match e {
-                Event::Input(InputEvent::Key(Key::Esc)) => {
+                InputEvent::Key(Key::Esc) => {
                     let _ = sender.send(Event::UI(UIEvent::Exit));
-                    true
-                }
-                Event::UI(UIEvent::Readline { source: _, line }) => {
-                    log.write().unwrap().log_msg(line);
                     true
                 }
                 _ => false,
@@ -41,14 +46,6 @@ impl<B: RenderBackend> Widget<B> for App {
         );
         app
     }
-    /*fn handle_event(&mut self, event: &Event) -> Option<Event> {
-        match event {
-            Event::Input(InputEvent::Key(Key::Esc)) => Some(Event::UI(UIEvent::Exit)),
-            //Event::Input(InputEvent::Key(_)) => self.rl.handle_event(event),
-            //Event::Input(InputEvent::Mouse(_)) => self.log.handle_event(event),
-            _ => None,
-        }
-    }*/
 }
 
 fn main() {

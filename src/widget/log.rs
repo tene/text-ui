@@ -1,17 +1,17 @@
 use input::{MouseButton, MouseEvent};
-use {Event, InputEvent, RenderBackend, RenderContext, Widget};
+use {shared, InputEvent, RenderBackend, RenderContext, RenderElement, Shared, Widget};
 
 #[derive(Debug)]
 pub struct Log {
     pub lines: Vec<String>,
-    pub scroll_pos: usize,
+    pub scroll_pos: Shared<usize>,
     pub selected: Option<usize>,
 }
 
 impl Log {
     pub fn new() -> Self {
         let lines = vec![];
-        let scroll_pos = 0;
+        let scroll_pos = shared(0);
         let selected = None;
         Log {
             lines,
@@ -29,21 +29,25 @@ where
     B: RenderBackend,
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
-        ctx.text(self.lines.clone())
+        let mut txt = ctx.text(self.lines.clone());
+        let scroll_pos = self.scroll_pos.clone();
+        txt.add_input_handler(
+            "log",
+            Box::new(move |e| match e {
+                InputEvent::Mouse(MouseEvent::Press(btn, _, _)) => {
+                    let mut sp = scroll_pos.write().unwrap();
+                    match btn {
+                        MouseButton::WheelDown => *sp += 1,
+                        MouseButton::WheelUp => if *sp > 0 {
+                            *sp -= 1
+                        },
+                        _ => {}
+                    };
+                    true
+                }
+                _ => false,
+            }),
+        );
+        txt
     }
-    /*fn handle_event(&mut self, event: &Event) -> Option<Event> {
-        match event {
-            Event::Input(InputEvent::Mouse(MouseEvent::Press(btn, _, _))) => {
-                match btn {
-                    MouseButton::WheelDown => self.scroll_pos += 1,
-                    MouseButton::WheelUp => if self.scroll_pos > 0 {
-                        self.scroll_pos -= 1
-                    },
-                    _ => {}
-                };
-            }
-            _ => {}
-        }
-        None
-    }*/
 }

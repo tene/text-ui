@@ -1,51 +1,88 @@
 use input::Key;
-use std::sync::mpsc::Sender;
+use std::fmt;
 use {
-    shared, Event, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement,
-    Shared, Widget,
+    shared, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement, Shared,
+    Widget,
 };
 
-#[derive(Debug)]
+pub enum ReadlineEvent {
+    Submitted { name: String, line: String },
+}
+
 struct ReadlineInner {
+    pub name: String,
     pub line: String,
     pub index: usize,
+    pub listeners: Vec<Box<Fn(&ReadlineEvent) -> bool>>,
 }
 
 impl ReadlineInner {
-    pub fn handle_event(&mut self, event: &Event) -> (bool, Option<String>) {
+    pub fn new(name: &str) -> Self {
+        let line = String::new();
+        let index = 0;
+        let name = name.to_owned();
+        let listeners = vec![];
+        ReadlineInner {
+            name,
+            line,
+            index,
+            listeners,
+        }
+    }
+    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent) -> bool>) {
+        self.listeners.push(l);
+    }
+    fn submit(&mut self) {
+        self.index = 0;
+        let line = self.line.split_off(0);
+        let name = self.name.clone();
+        let event = ReadlineEvent::Submitted { name, line };
+        self.listeners.retain(|l| l(&event));
+    }
+    pub fn handle_input(&mut self, event: &InputEvent) -> bool {
         match event {
-            Event::Input(event) => match event {
-                InputEvent::Key(Key::Char('\n')) => {
-                    self.index = 0;
-                    let line = self.line.split_off(0);
-                    (true, Some(line))
-                }
-                InputEvent::Key(Key::Char(ch)) => {
-                    self.line.insert(self.index, *ch);
-                    self.index += 1;
-                    (true, None)
-                }
-                InputEvent::Key(Key::Esc) => (false, None),
-                _ => (false, None),
-            },
-            _ => (false, None),
+            InputEvent::Key(Key::Char('\n')) => {
+                self.submit();
+                true
+            }
+            InputEvent::Key(Key::Char(ch)) => {
+                self.line.insert(self.index, *ch);
+                self.index += 1;
+                true
+            }
+            InputEvent::Key(Key::Esc) => false,
+            _ => false,
         }
     }
 }
 
-#[derive(Debug)]
+impl fmt::Debug for ReadlineInner {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Readline {{ name: {}, index: {}, line: {} }}",
+            self.name, self.index, self.line
+        )
+    }
+}
+
 pub struct Readline {
-    pub name: String,
     inner: Shared<ReadlineInner>,
 }
 
 impl Readline {
     pub fn new(name: &str) -> Self {
-        let line = String::new();
-        let index = 0;
-        let name = name.to_owned();
-        let inner = shared(ReadlineInner { line, index });
-        Readline { name, inner }
+        let inner = shared(ReadlineInner::new(name));
+        Readline { inner }
+    }
+    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent) -> bool>) {
+        self.inner.write().unwrap().add_listener(l)
+    }
+}
+
+impl fmt::Debug for Readline {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.inner.read().unwrap().fmt(f)
     }
 }
 
@@ -55,18 +92,11 @@ where
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         let inner = self.inner.clone();
-        let sender = ctx.event_sender();
-        let name = self.name.clone();
+        let name = inner.read().unwrap().name.clone();
         let mut line = ctx.line(&format!("{}", inner.read().unwrap().line));
         line.add_input_handler(
-            &self.name,
-            Box::new(move |e| {
-                let (rv, line) = inner.write().unwrap().handle_event(e);
-                if let Some(line) = line {
-                    let _ = sender.send(Event::readline(name.clone(), line)); // UGH this is gross RL should have its own callbacks
-                };
-                rv
-            }),
+            &name,
+            Box::new(move |e| inner.write().unwrap().handle_input(e)),
         );
         line
     }
