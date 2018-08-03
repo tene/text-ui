@@ -1,26 +1,34 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, FullGrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement, Shared,
-    Widget,
+    shared, FullGrowthPolicy, InputEvent, Name, RenderBackend, RenderContext, RenderElement,
+    Shared, Widget,
 };
 
-pub enum ReadlineEvent {
-    Submitted { name: String, line: String },
+pub enum ReadlineEvent<'a, N>
+where
+    N: 'a + Name,
+{
+    Submitted { name: &'a N, line: &'a str },
 }
 
-struct ReadlineInner {
-    pub name: String,
+struct ReadlineInner<N>
+where
+    N: Name,
+{
+    pub name: N,
     pub line: String,
     pub index: usize,
-    pub listeners: Vec<Box<Fn(&ReadlineEvent) -> bool>>,
+    pub listeners: Vec<Box<Fn(&ReadlineEvent<N>) -> bool>>,
 }
 
-impl ReadlineInner {
-    pub fn new(name: &str) -> Self {
+impl<N> ReadlineInner<N>
+where
+    N: Name,
+{
+    pub fn new(name: N) -> Self {
         let line = String::new();
         let index = 0;
-        let name = name.to_owned();
         let listeners = vec![];
         ReadlineInner {
             name,
@@ -29,13 +37,13 @@ impl ReadlineInner {
             listeners,
         }
     }
-    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent) -> bool>) {
+    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) {
         self.listeners.push(l);
     }
     fn submit(&mut self) {
         self.index = 0;
-        let line = self.line.split_off(0);
-        let name = self.name.clone();
+        let line = &self.line.split_off(0);
+        let name = &self.name;
         let event = ReadlineEvent::Submitted { name, line };
         self.listeners.retain(|l| l(&event));
     }
@@ -56,46 +64,59 @@ impl ReadlineInner {
     }
 }
 
-impl fmt::Debug for ReadlineInner {
+impl<N> fmt::Debug for ReadlineInner<N>
+where
+    N: Name,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Readline {{ name: {}, index: {}, line: {} }}",
+            "Readline {{ name: {:?}, index: {}, line: {} }}",
             self.name, self.index, self.line
         )
     }
 }
 
-pub struct Readline {
-    inner: Shared<ReadlineInner>,
+pub struct Readline<N>
+where
+    N: Name,
+{
+    inner: Shared<ReadlineInner<N>>,
 }
 
-impl Readline {
-    pub fn new(name: &str) -> Self {
+impl<N> Readline<N>
+where
+    N: Name,
+{
+    pub fn new(name: N) -> Self {
         let inner = shared(ReadlineInner::new(name));
         Readline { inner }
     }
-    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent) -> bool>) {
+    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) {
         self.inner.write().unwrap().add_listener(l)
     }
 }
 
-impl fmt::Debug for Readline {
+impl<N> fmt::Debug for Readline<N>
+where
+    N: Name,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.inner.read().unwrap().fmt(f)
     }
 }
 
-impl<B> Widget<B> for Readline
+impl<B, N> Widget<B, N> for Readline<N>
 where
-    B: RenderBackend,
+    N: 'static + Name,
+    B: RenderBackend<N>,
 {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         let inner = self.inner.clone();
         let name = inner.read().unwrap().name.clone();
         let mut line = ctx.line(&format!("{}", inner.read().unwrap().line));
         line.add_input_handler(
-            &name,
+            Some(name),
             Box::new(move |e| inner.write().unwrap().handle_input(e)),
         );
         line

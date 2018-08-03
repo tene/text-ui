@@ -6,17 +6,22 @@ use text_ui::{
     RenderElement, Shared, TermionBackend, UIEvent, Widget,
 };
 
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+enum MyNames {
+    Input,
+}
+
 #[derive(Debug)]
 struct App {
     pub log: Shared<Log>,
-    pub rl: Readline,
+    pub rl: Readline<MyNames>,
 }
 
 impl App {
     pub fn new() -> Self {
         let log = shared(Log::new());
         let logref = log.clone();
-        let mut rl = Readline::new("input");
+        let mut rl = Readline::new(MyNames::Input);
         rl.add_listener(Box::new(move |e| match e {
             ReadlineEvent::Submitted { name: _, line } => match logref.write() {
                 Ok(mut log) => {
@@ -30,12 +35,12 @@ impl App {
     }
 }
 
-impl<B: RenderBackend> Widget<B> for App {
+impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
     fn render(&self, mut ctx: B::Context) -> B::Element {
         let sender = ctx.event_sender();
         let mut app = ctx.vbox(vec![&self.log, &self.rl]);
         app.add_input_handler(
-            "app",
+            None,
             Box::new(move |e| match e {
                 InputEvent::Key(Key::Esc) => {
                     let _ = sender.send(Event::UI(UIEvent::Exit));
@@ -52,5 +57,5 @@ fn main() {
     let app = App::new();
     app.log.write().unwrap().log_msg("asdf");
     let mut be = TermionBackend::new();
-    be.run(app);
+    be.run(app, MyNames::Input);
 }

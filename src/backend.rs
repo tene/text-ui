@@ -13,7 +13,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    Event, GrowthPolicy, InputEvent, RenderBackend, RenderContext, RenderElement, UIEvent, Widget,
+    Event, GrowthPolicy, InputEvent, Name, RenderBackend, RenderContext, RenderElement, UIEvent,
+    Widget,
 };
 
 use indextree::IndexTree;
@@ -72,18 +73,18 @@ impl From<Span> for Line {
     }
 }
 
-pub struct Block {
+pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<String, Box<Fn(&InputEvent) -> bool>>,
+    pub callbacks: IndexTree<N, Box<Fn(&InputEvent) -> bool>>,
 }
 
-impl RenderElement for Block {
-    fn add_input_handler(&mut self, name: &str, callback: Box<Fn(&InputEvent) -> bool>) {
-        self.callbacks.push(name.to_owned(), callback)
+impl<N: Name> RenderElement<N> for Block<N> {
+    fn add_input_handler(&mut self, name: Option<N>, callback: Box<Fn(&InputEvent) -> bool>) {
+        self.callbacks.push(name, callback)
     }
-    fn handle_input(&self, name: String, event: &InputEvent) {
+    fn handle_input(&self, name: N, event: &InputEvent) {
         for cb in self.callbacks.get_iter(&name) {
             match (cb)(event) {
                 true => break,
@@ -93,7 +94,7 @@ impl RenderElement for Block {
     }
 }
 
-impl Block {
+impl<N: Name> Block<N> {
     pub fn new(lines: Vec<Line>, width: usize, height: usize) -> Self {
         Block {
             callbacks: IndexTree::new(),
@@ -135,7 +136,7 @@ impl Block {
     }
 }
 
-impl From<Line> for Block {
+impl<N: Name> From<Line> for Block<N> {
     fn from(line: Line) -> Self {
         let width = line.width;
         let height = 1;
@@ -176,7 +177,7 @@ impl TermionBackend {
             receiver,
         }
     }
-    fn paint_image(&mut self, image: &Block) {
+    fn paint_image<N: Name>(&mut self, image: &Block<N>) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
@@ -186,7 +187,7 @@ impl TermionBackend {
         }
         self.screen.flush().unwrap();
     }
-    pub fn run(&mut self, app: impl Widget<Self>) {
+    pub fn run<N: Name>(&mut self, app: impl Widget<Self, N>, focus: N) {
         // UGH disentangle input, control commands, and "app" events
         let sender = self.sender.clone();
         thread::spawn(move || {
@@ -202,7 +203,8 @@ impl TermionBackend {
             }
         });
         'outer: loop {
-            let ui: Block = app.render(TermionContext::new(self.size.clone(), self.sender.clone()));
+            let ui: Block<N> =
+                app.render(TermionContext::new(self.size.clone(), self.sender.clone()));
             self.paint_image(&ui);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
@@ -213,7 +215,7 @@ impl TermionBackend {
                 match event {
                     Event::UI(UIEvent::Exit) => break 'outer,
                     Event::Input(event) => {
-                        for cb in ui.callbacks.get_iter(&"input".to_owned()) {
+                        for cb in ui.callbacks.get_iter(&focus) {
                             match cb(&event) {
                                 true => break,
                                 false => continue,
@@ -250,11 +252,11 @@ impl TermionContext {
     }
 }
 
-impl RenderContext<TermionBackend> for TermionContext {
-    fn line(&mut self, content: &str) -> Block {
+impl<N: Name> RenderContext<TermionBackend, N> for TermionContext {
+    fn line(&mut self, content: &str) -> Block<N> {
         Block::line(content, self.size.cols)
     }
-    fn text(&mut self, content: Vec<String>) -> Block {
+    fn text(&mut self, content: Vec<String>) -> Block<N> {
         Block::from_text(
             content,
             self.size.cols,
@@ -262,10 +264,10 @@ impl RenderContext<TermionBackend> for TermionContext {
             GrowthPolicy::Greedy,
         )
     }
-    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend>>) -> Block {
+    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend, N>>) -> Block<N> {
         let (fixed, greedy): (
-            Vec<(usize, &dyn Widget<TermionBackend>)>,
-            Vec<(usize, &dyn Widget<TermionBackend>)>,
+            Vec<(usize, &dyn Widget<TermionBackend, N>)>,
+            Vec<(usize, &dyn Widget<TermionBackend, N>)>,
         ) = widgets
             .into_iter()
             .enumerate()
@@ -273,7 +275,7 @@ impl RenderContext<TermionBackend> for TermionContext {
         let mut remaining_rows = self.size.rows;
         let cols = self.size.cols;
         let greedy_count = greedy.len();
-        let mut blocks: Vec<(usize, Block)> = fixed
+        let mut blocks: Vec<(usize, Block<N>)> = fixed
             .into_iter()
             .map(|(i, w)| {
                 let b = w.render(self.with_rows(remaining_rows));
@@ -298,7 +300,7 @@ impl RenderContext<TermionBackend> for TermionContext {
     }
 }
 
-impl RenderBackend for TermionBackend {
+impl<N: Name> RenderBackend<N> for TermionBackend {
     type Context = TermionContext;
-    type Element = Block;
+    type Element = Block<N>;
 }

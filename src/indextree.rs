@@ -28,11 +28,13 @@ where
         }
     }
 
-    pub fn push(&mut self, name: N, item: I) {
+    pub fn push(&mut self, name: Option<N>, item: I) {
         self.items.push(item);
         self.parents.push(None);
         let idx = self.items.len() - 1;
-        self.leaves.insert(name, idx); // Need to handle name collisions
+        if let Some(name) = name {
+            self.leaves.insert(name, idx); // Need to handle name collisions
+        };
         for i in self.roots.drain() {
             self.parents[i] = Some(idx);
         }
