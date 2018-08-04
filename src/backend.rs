@@ -13,7 +13,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    Event, GrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, UIEvent, Widget,
+    Event, GrowthPolicy, InputCallback, Name, RenderBackend, RenderElement, UIEvent, Widget,
     WidgetEventContext, WidgetRenderContext,
 };
 
@@ -77,16 +77,17 @@ pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<N, Box<Fn(&TermionEventContext, &InputEvent) -> bool>>,
+    pub callbacks: IndexTree<N, InputCallback<TermionBackend, N>>,
 }
 
 impl<N: Name> RenderElement<TermionBackend, N> for Block<N> {
     fn add_input_handler(
-        &mut self,
+        mut self,
         name: Option<N>,
-        callback: Box<Fn(&TermionEventContext, &InputEvent) -> bool>,
-    ) {
-        self.callbacks.push(name, callback)
+        callback: InputCallback<TermionBackend, N>,
+    ) -> Self {
+        self.callbacks.push(name, callback);
+        self
     }
 }
 
@@ -177,7 +178,7 @@ impl TermionBackend {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
-            for span in line.spans.iter() {
+            for span in &line.spans {
                 write!(self.screen, "{}", span.text).unwrap();
             }
         }
@@ -221,6 +222,12 @@ impl TermionBackend {
                 }
             }
         }
+    }
+}
+
+impl Default for TermionBackend {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -275,8 +282,7 @@ impl<N: Name> WidgetRenderContext<TermionBackend, N> for TermionRenderContext {
                 let b = w.render(self.with_rows(remaining_rows));
                 remaining_rows -= b.height;
                 (i, b)
-            })
-            .collect();
+            }).collect();
         blocks.extend(greedy.into_iter().map(|(i, w)| {
             let b = w.render(self.with_rows(remaining_rows / greedy_count));
             remaining_rows -= b.height;

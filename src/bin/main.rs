@@ -3,7 +3,7 @@ use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
     shared, widget::readline::ReadlineEvent, InputEvent, RenderBackend, RenderElement, Shared,
-    TermionBackend, UIEvent, Widget, WidgetEventContext, WidgetRenderContext,
+    TermionBackend, UIEvent, Widget, WidgetRenderContext,
 };
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
@@ -23,7 +23,7 @@ impl App {
         let logref = log.clone();
         let mut rl = Readline::new(MyNames::Input);
         rl.add_listener(Box::new(move |e| match e {
-            ReadlineEvent::Submitted { name: _, line } => match logref.write() {
+            ReadlineEvent::Submitted { line, .. } => match logref.write() {
                 Ok(mut log) => {
                     log.log_msg(line);
                     true
@@ -37,18 +37,16 @@ impl App {
 
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
     fn render(&self, mut ctx: B::RenderContext) -> B::Element {
-        let mut app = ctx.vbox(vec![&self.log, &self.rl]);
-        app.add_input_handler(
+        ctx.vbox(vec![&self.log, &self.rl]).add_input_handler(
             None,
             Box::new(move |ctx, e| match e {
                 InputEvent::Key(Key::Esc) => {
-                    let _ = ctx.send_event(UIEvent::Exit);
+                    ctx.send_event(UIEvent::Exit);
                     true
                 }
                 _ => false,
             }),
-        );
-        app
+        )
     }
 }
 

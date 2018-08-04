@@ -114,12 +114,11 @@ where
     fn render(&self, mut ctx: B::RenderContext) -> B::Element {
         let inner = self.inner.clone();
         let name = inner.read().unwrap().name.clone();
-        let mut line = ctx.line(&format!("{}", inner.read().unwrap().line));
-        line.add_input_handler(
+        let line = inner.read().unwrap().line.to_string();
+        ctx.line(&line).add_input_handler(
             Some(name),
             Box::new(move |_ctx, e| inner.write().unwrap().handle_input(e)),
-        );
-        line
+        )
     }
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::fixed_height()

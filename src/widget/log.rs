@@ -1,7 +1,7 @@
 use input::{MouseButton, MouseEvent};
 use {shared, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget, WidgetRenderContext};
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Log {
     pub lines: Vec<String>,
     pub scroll_pos: Shared<usize>,
@@ -30,9 +30,8 @@ where
     N: Name,
 {
     fn render(&self, mut ctx: B::RenderContext) -> B::Element {
-        let mut txt = ctx.text(self.lines.clone());
         let scroll_pos = self.scroll_pos.clone();
-        txt.add_input_handler(
+        ctx.text(self.lines.clone()).add_input_handler(
             None,
             Box::new(move |_ctx, e| match e {
                 InputEvent::Mouse(MouseEvent::Press(btn, _, _)) => {
@@ -48,7 +47,6 @@ where
                 }
                 _ => false,
             }),
-        );
-        txt
+        )
     }
 }

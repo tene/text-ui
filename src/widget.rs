@@ -12,11 +12,9 @@ use {FullGrowthPolicy, Shared};
 
 pub trait Name: Hash + Eq + Clone + Debug {}
 
-impl<N> Name for N
-where
-    N: Hash + Eq + Clone + Debug,
-{
-}
+pub type InputCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, &InputEvent) -> bool>;
+
+impl<N> Name for N where N: Hash + Eq + Clone + Debug {}
 
 pub trait WidgetRenderContext<B, N>
 where
@@ -55,11 +53,7 @@ where
     B: RenderBackend<N>,
 {
     //fn size(&self) -> Size;
-    fn add_input_handler(
-        &mut self,
-        name: Option<N>,
-        callback: Box<Fn(&B::EventContext, &InputEvent) -> bool>,
-    ); // swap bool for ADT, swap name for generic
+    fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self; // swap bool for ADT, swap name for generic
 }
 
 pub trait RenderBackend<N: Name>: Sized {
