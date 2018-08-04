@@ -37,14 +37,15 @@ impl App {
 
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
     fn render(&self, mut ctx: B::RenderContext) -> B::Element {
+        use text_ui::ShouldPropagate::*;
         ctx.vbox(vec![&self.log, &self.rl]).add_input_handler(
             None,
             Box::new(move |ctx, e| match e {
                 InputEvent::Key(Key::Esc) => {
                     ctx.send_event(UIEvent::Exit);
-                    true
+                    Stop
                 }
-                _ => false,
+                _ => Continue,
             }),
         )
     }

@@ -12,7 +12,7 @@ pub mod widget;
 pub use backend::{Size, TermionBackend};
 pub use input::{Event, InputEvent, MouseEvent, UIEvent};
 pub use widget::{
-    InputCallback, Name, RenderBackend, RenderElement, Widget, WidgetEventContext,
+    InputCallback, Name, RenderBackend, RenderElement, ShouldPropagate, Widget, WidgetEventContext,
     WidgetRenderContext,
 };
 

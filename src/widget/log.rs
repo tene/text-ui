@@ -33,19 +33,22 @@ where
         let scroll_pos = self.scroll_pos.clone();
         ctx.text(self.lines.clone()).add_input_handler(
             None,
-            Box::new(move |_ctx, e| match e {
-                InputEvent::Mouse(MouseEvent::Press(btn, _, _)) => {
-                    let mut sp = scroll_pos.write().unwrap();
-                    match btn {
-                        MouseButton::WheelDown => *sp += 1,
-                        MouseButton::WheelUp => if *sp > 0 {
-                            *sp -= 1
-                        },
-                        _ => {}
-                    };
-                    true
+            Box::new(move |_ctx, e| {
+                use ShouldPropagate::*;
+                match e {
+                    InputEvent::Mouse(MouseEvent::Press(btn, _, _)) => {
+                        let mut sp = scroll_pos.write().unwrap();
+                        match btn {
+                            MouseButton::WheelDown => *sp += 1,
+                            MouseButton::WheelUp => if *sp > 0 {
+                                *sp -= 1
+                            },
+                            _ => {}
+                        };
+                        Stop
+                    }
+                    _ => Continue,
                 }
-                _ => false,
             }),
         )
     }

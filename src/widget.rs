@@ -12,7 +12,12 @@ use {FullGrowthPolicy, Shared};
 
 pub trait Name: Hash + Eq + Clone + Debug {}
 
-pub type InputCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, &InputEvent) -> bool>;
+pub enum ShouldPropagate {
+    Continue,
+    Stop,
+}
+
+pub type InputCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, &InputEvent) -> ShouldPropagate>;
 
 impl<N> Name for N where N: Hash + Eq + Clone + Debug {}
 
@@ -37,23 +42,13 @@ where
     fn send_event(&self, UIEvent);
 }
 
-enum _ShouldRedraw {
-    PleaseRedraw,
-    NoRedrawNeeded,
-}
-
-enum _InputHandleResult {
-    Ignored,
-    Handled(_ShouldRedraw),
-}
-
 pub trait RenderElement<B, N>
 where
     N: Name,
     B: RenderBackend<N>,
 {
     //fn size(&self) -> Size;
-    fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self; // swap bool for ADT, swap name for generic
+    fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self;
 }
 
 pub trait RenderBackend<N: Name>: Sized {

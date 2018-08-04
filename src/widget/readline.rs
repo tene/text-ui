@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, FullGrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget,
-    WidgetRenderContext,
+    shared, FullGrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, Shared,
+    ShouldPropagate, Widget, WidgetRenderContext,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -47,19 +47,20 @@ where
         let event = ReadlineEvent::Submitted { name, line };
         self.listeners.retain(|l| l(&event));
     }
-    pub fn handle_input(&mut self, event: &InputEvent) -> bool {
+    pub fn handle_input(&mut self, event: &InputEvent) -> ShouldPropagate {
+        use ShouldPropagate::*;
         match event {
             InputEvent::Key(Key::Char('\n')) => {
                 self.submit();
-                true
+                Stop
             }
             InputEvent::Key(Key::Char(ch)) => {
                 self.line.insert(self.index, *ch);
                 self.index += 1;
-                true
+                Stop
             }
-            InputEvent::Key(Key::Esc) => false,
-            _ => false,
+            InputEvent::Key(Key::Esc) => Continue,
+            _ => Continue,
         }
     }
 }
