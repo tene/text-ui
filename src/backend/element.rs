@@ -64,14 +64,14 @@ pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<N, InputCallback<TermionBackend, N>>,
+    pub callbacks: IndexTree<N, InputCallback<TermionBackend<N>, N>>,
 }
 
-impl<N: Name> RenderElement<TermionBackend, N> for Block<N> {
+impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
     fn add_input_handler(
         mut self,
         name: Option<N>,
-        callback: InputCallback<TermionBackend, N>,
+        callback: InputCallback<TermionBackend<N>, N>,
     ) -> Self {
         self.callbacks.push(name, callback);
         self

@@ -38,7 +38,7 @@ where
         }
     }
     pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) {
-        self.listeners.push(l);
+        self.listeners.push(l)
     }
     fn submit(&mut self) {
         self.index = 0;
@@ -93,8 +93,9 @@ where
         let inner = shared(ReadlineInner::new(name));
         Readline { inner }
     }
-    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) {
-        self.inner.write().unwrap().add_listener(l)
+    pub fn add_listener(self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) -> Self {
+        self.inner.write().unwrap().add_listener(l);
+        self
     }
 }
 

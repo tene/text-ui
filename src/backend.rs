@@ -18,9 +18,9 @@ mod element;
 use self::element::Block;
 
 #[derive(Debug, PartialEq)]
-enum Event {
+enum Event<N: Name> {
     Input(InputEvent),
-    App(AppEvent),
+    App(AppEvent<N>),
 }
 
 #[derive(Debug, Clone)]
@@ -35,14 +35,14 @@ impl Size {
     }
 }
 
-pub struct TermionBackend {
+pub struct TermionBackend<N: Name> {
     screen: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
     pub size: Size,
-    receiver: Receiver<Event>,
-    sender: Sender<Event>,
+    receiver: Receiver<Event<N>>,
+    sender: Sender<Event<N>>,
 }
 
-impl TermionBackend {
+impl<N: Name + 'static> TermionBackend<N> {
     pub fn new() -> Self {
         let screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
         let (width, height) = termion::terminal_size().unwrap();
@@ -55,7 +55,7 @@ impl TermionBackend {
             receiver,
         }
     }
-    fn paint_image<N: Name>(&mut self, image: &Block<N>) {
+    fn paint_image(&mut self, image: &Block<N>) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
@@ -65,8 +65,7 @@ impl TermionBackend {
         }
         self.screen.flush().unwrap();
     }
-    pub fn run<N: Name>(&mut self, app: impl Widget<Self, N>, focus: N) {
-        // UGH disentangle input, control commands, and "app" events
+    pub fn run(&mut self, app: impl Widget<Self, N>, mut focus: N) {
         let sender = self.sender.clone();
         thread::spawn(move || {
             /*let stdin = stdin();
@@ -92,6 +91,7 @@ impl TermionBackend {
             for event in self.receiver.try_iter() {
                 match event {
                     Event::App(AppEvent::Exit) => break 'outer,
+                    Event::App(AppEvent::SetFocus(f)) => focus = f,
                     Event::Input(event) => {
                         for cb in ui.callbacks.get_iter(&focus) {
                             use ShouldPropagate::*;
@@ -107,7 +107,7 @@ impl TermionBackend {
     }
 }
 
-impl Default for TermionBackend {
+impl<N: Name + 'static> Default for TermionBackend<N> {
     fn default() -> Self {
         Self::new()
     }
@@ -135,7 +135,7 @@ impl TermionRenderContext {
 }
 
 // XXX TODO These should be generic default impls
-impl<N: Name> WidgetRenderContext<TermionBackend, N> for TermionRenderContext {
+impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext {
     fn line(&mut self, content: &str) -> Block<N> {
         Block::line(content, self.size.cols)
     }
@@ -147,10 +147,10 @@ impl<N: Name> WidgetRenderContext<TermionBackend, N> for TermionRenderContext {
             GrowthPolicy::Greedy,
         )
     }
-    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend, N>>) -> Block<N> {
+    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend<N>, N>>) -> Block<N> {
         let (fixed, greedy): (
-            Vec<(usize, &dyn Widget<TermionBackend, N>)>,
-            Vec<(usize, &dyn Widget<TermionBackend, N>)>,
+            Vec<(usize, &dyn Widget<TermionBackend<N>, N>)>,
+            Vec<(usize, &dyn Widget<TermionBackend<N>, N>)>,
         ) = widgets
             .into_iter()
             .enumerate()
@@ -179,24 +179,24 @@ impl<N: Name> WidgetRenderContext<TermionBackend, N> for TermionRenderContext {
     }
 }
 
-pub struct TermionEventContext {
-    sender: Sender<Event>,
+pub struct TermionEventContext<N: Name> {
+    sender: Sender<Event<N>>,
 }
 
-impl TermionEventContext {
-    fn new(sender: Sender<Event>) -> Self {
+impl<N: Name> TermionEventContext<N> {
+    fn new(sender: Sender<Event<N>>) -> Self {
         Self { sender }
     }
 }
 
-impl<N: Name> WidgetEventContext<TermionBackend, N> for TermionEventContext {
-    fn send_event(&self, event: AppEvent) {
+impl<N: Name> WidgetEventContext<TermionBackend<N>, N> for TermionEventContext<N> {
+    fn send_event(&self, event: AppEvent<N>) {
         let _ = self.sender.send(Event::App(event));
     }
 }
 
-impl<N: Name> RenderBackend<N> for TermionBackend {
+impl<N: Name> RenderBackend<N> for TermionBackend<N> {
     type RenderContext = TermionRenderContext;
-    type EventContext = TermionEventContext;
+    type EventContext = TermionEventContext<N>;
     type Element = Block<N>;
 }

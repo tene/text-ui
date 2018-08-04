@@ -12,7 +12,9 @@ pub use self::readline::Readline;
 
 use {FullGrowthPolicy, Shared};
 
-pub trait Name: Hash + Eq + Clone + Debug {}
+pub trait Name: Hash + Eq + Clone + Debug + Send {}
+
+impl<N> Name for N where N: Hash + Eq + Clone + Debug + Send {}
 
 pub enum ShouldPropagate {
     Continue,
@@ -20,8 +22,6 @@ pub enum ShouldPropagate {
 }
 
 pub type InputCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, &InputEvent) -> ShouldPropagate>;
-
-impl<N> Name for N where N: Hash + Eq + Clone + Debug {}
 
 pub trait WidgetRenderContext<B, N>
 where
@@ -41,7 +41,7 @@ where
     N: Name,
     B: RenderBackend<N>,
 {
-    fn send_event(&self, AppEvent);
+    fn send_event(&self, AppEvent<N>);
 }
 
 pub trait RenderElement<B, N>

@@ -17,9 +17,9 @@ pub use widget::{
 };
 
 #[derive(Debug, PartialEq)]
-pub enum AppEvent {
+pub enum AppEvent<N: Name> {
     Exit,
-    // SetFocus(Name)
+    SetFocus(N),
 }
 
 pub type Shared<T> = Arc<RwLock<T>>;
