@@ -1,5 +1,5 @@
 use input::{MouseButton, MouseEvent};
-use {shared, InputEvent, Name, RenderBackend, RenderContext, RenderElement, Shared, Widget};
+use {shared, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget, WidgetRenderContext};
 
 #[derive(Debug)]
 pub struct Log {
@@ -29,12 +29,12 @@ where
     B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, mut ctx: B::Context) -> B::Element {
+    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
         let mut txt = ctx.text(self.lines.clone());
         let scroll_pos = self.scroll_pos.clone();
         txt.add_input_handler(
             None,
-            Box::new(move |e| match e {
+            Box::new(move |_ctx, e| match e {
                 InputEvent::Mouse(MouseEvent::Press(btn, _, _)) => {
                     let mut sp = scroll_pos.write().unwrap();
                     match btn {

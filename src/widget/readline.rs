@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, FullGrowthPolicy, InputEvent, Name, RenderBackend, RenderContext, RenderElement,
-    Shared, Widget,
+    shared, FullGrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget,
+    WidgetRenderContext,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -111,13 +111,13 @@ where
     N: 'static + Name,
     B: RenderBackend<N>,
 {
-    fn render(&self, mut ctx: B::Context) -> B::Element {
+    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
         let inner = self.inner.clone();
         let name = inner.read().unwrap().name.clone();
         let mut line = ctx.line(&format!("{}", inner.read().unwrap().line));
         line.add_input_handler(
             Some(name),
-            Box::new(move |e| inner.write().unwrap().handle_input(e)),
+            Box::new(move |_ctx, e| inner.write().unwrap().handle_input(e)),
         );
         line
     }

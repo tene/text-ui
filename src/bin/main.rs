@@ -2,8 +2,8 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::readline::ReadlineEvent, Event, InputEvent, RenderBackend, RenderContext,
-    RenderElement, Shared, TermionBackend, UIEvent, Widget,
+    shared, widget::readline::ReadlineEvent, InputEvent, RenderBackend, RenderElement, Shared,
+    TermionBackend, UIEvent, Widget, WidgetEventContext, WidgetRenderContext,
 };
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
@@ -36,14 +36,13 @@ impl App {
 }
 
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
-    fn render(&self, mut ctx: B::Context) -> B::Element {
-        let sender = ctx.event_sender();
+    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
         let mut app = ctx.vbox(vec![&self.log, &self.rl]);
         app.add_input_handler(
             None,
-            Box::new(move |e| match e {
+            Box::new(move |ctx, e| match e {
                 InputEvent::Key(Key::Esc) => {
-                    let _ = sender.send(Event::UI(UIEvent::Exit));
+                    let _ = ctx.send_event(UIEvent::Exit);
                     true
                 }
                 _ => false,

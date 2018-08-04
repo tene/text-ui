@@ -13,8 +13,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    Event, GrowthPolicy, InputEvent, Name, RenderBackend, RenderContext, RenderElement, UIEvent,
-    Widget,
+    Event, GrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, UIEvent, Widget,
+    WidgetEventContext, WidgetRenderContext,
 };
 
 use indextree::IndexTree;
@@ -77,20 +77,16 @@ pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<N, Box<Fn(&InputEvent) -> bool>>,
+    pub callbacks: IndexTree<N, Box<Fn(&TermionEventContext, &InputEvent) -> bool>>,
 }
 
-impl<N: Name> RenderElement<N> for Block<N> {
-    fn add_input_handler(&mut self, name: Option<N>, callback: Box<Fn(&InputEvent) -> bool>) {
+impl<N: Name> RenderElement<TermionBackend, N> for Block<N> {
+    fn add_input_handler(
+        &mut self,
+        name: Option<N>,
+        callback: Box<Fn(&TermionEventContext, &InputEvent) -> bool>,
+    ) {
         self.callbacks.push(name, callback)
-    }
-    fn handle_input(&self, name: N, event: &InputEvent) {
-        for cb in self.callbacks.get_iter(&name) {
-            match (cb)(event) {
-                true => break,
-                false => continue,
-            }
-        }
     }
 }
 
@@ -202,9 +198,9 @@ impl TermionBackend {
                 }
             }
         });
+        let event_ctx = TermionEventContext::new(self.sender.clone());
         'outer: loop {
-            let ui: Block<N> =
-                app.render(TermionContext::new(self.size.clone(), self.sender.clone()));
+            let ui: Block<N> = app.render(TermionRenderContext::new(self.size.clone()));
             self.paint_image(&ui);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
@@ -216,7 +212,7 @@ impl TermionBackend {
                     Event::UI(UIEvent::Exit) => break 'outer,
                     Event::Input(event) => {
                         for cb in ui.callbacks.get_iter(&focus) {
-                            match cb(&event) {
+                            match cb(&event_ctx, &event) {
                                 true => break,
                                 false => continue,
                             }
@@ -229,30 +225,28 @@ impl TermionBackend {
 }
 
 #[derive(Clone)]
-pub struct TermionContext {
+pub struct TermionRenderContext {
     size: Size,
-    sender: Sender<Event>,
 }
 
-impl TermionContext {
-    fn new(size: Size, sender: Sender<Event>) -> Self {
-        TermionContext { size, sender }
+impl TermionRenderContext {
+    fn new(size: Size) -> Self {
+        Self { size }
     }
     fn with_rows(&self, rows: usize) -> Self {
         let cols = self.size.cols;
         let size = Size { rows, cols };
-        let sender = self.sender.clone();
-        TermionContext { size, sender }
+        Self::new(size)
     }
     fn _with_cols(&self, cols: usize) -> Self {
         let rows = self.size.rows;
         let size = Size { rows, cols };
-        let sender = self.sender.clone();
-        TermionContext { size, sender }
+        Self::new(size)
     }
 }
 
-impl<N: Name> RenderContext<TermionBackend, N> for TermionContext {
+// XXX TODO These should be generic default impls
+impl<N: Name> WidgetRenderContext<TermionBackend, N> for TermionRenderContext {
     fn line(&mut self, content: &str) -> Block<N> {
         Block::line(content, self.size.cols)
     }
@@ -295,12 +289,26 @@ impl<N: Name> RenderContext<TermionBackend, N> for TermionContext {
             acc
         })
     }
-    fn event_sender(&self) -> Sender<Event> {
-        self.sender.clone()
+}
+
+pub struct TermionEventContext {
+    sender: Sender<Event>,
+}
+
+impl TermionEventContext {
+    fn new(sender: Sender<Event>) -> Self {
+        Self { sender }
+    }
+}
+
+impl<N: Name> WidgetEventContext<TermionBackend, N> for TermionEventContext {
+    fn send_event(&self, event: UIEvent) {
+        let _ = self.sender.send(Event::UI(event));
     }
 }
 
 impl<N: Name> RenderBackend<N> for TermionBackend {
-    type Context = TermionContext;
+    type RenderContext = TermionRenderContext;
+    type EventContext = TermionEventContext;
     type Element = Block<N>;
 }

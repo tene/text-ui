@@ -1,7 +1,6 @@
-use input::{Event, InputEvent};
+use input::{InputEvent, UIEvent};
 use std::fmt::Debug;
 use std::hash::Hash;
-use std::sync::mpsc::Sender;
 
 pub mod log;
 pub mod readline;
@@ -19,7 +18,7 @@ where
 {
 }
 
-pub trait RenderContext<B, N>
+pub trait WidgetRenderContext<B, N>
 where
     B: RenderBackend<N>,
     N: Name,
@@ -30,7 +29,14 @@ where
     fn line(&mut self, &str) -> B::Element;
     fn text(&mut self, Vec<String>) -> B::Element;
     fn vbox(&mut self, Vec<&dyn Widget<B, N>>) -> B::Element;
-    fn event_sender(&self) -> Sender<Event>;
+}
+
+pub trait WidgetEventContext<B, N>
+where
+    N: Name,
+    B: RenderBackend<N>,
+{
+    fn send_event(&self, UIEvent);
 }
 
 enum _ShouldRedraw {
@@ -43,15 +49,23 @@ enum _InputHandleResult {
     Handled(_ShouldRedraw),
 }
 
-pub trait RenderElement<N: Name> {
+pub trait RenderElement<B, N>
+where
+    N: Name,
+    B: RenderBackend<N>,
+{
     //fn size(&self) -> Size;
-    fn add_input_handler(&mut self, name: Option<N>, callback: Box<Fn(&InputEvent) -> bool>); // swap bool for ADT, swap name for generic
-    fn handle_input(&self, N, &InputEvent);
+    fn add_input_handler(
+        &mut self,
+        name: Option<N>,
+        callback: Box<Fn(&B::EventContext, &InputEvent) -> bool>,
+    ); // swap bool for ADT, swap name for generic
 }
 
 pub trait RenderBackend<N: Name>: Sized {
-    type Context: RenderContext<Self, N>;
-    type Element: RenderElement<N>;
+    type RenderContext: WidgetRenderContext<Self, N>;
+    type EventContext: WidgetEventContext<Self, N>;
+    type Element: RenderElement<Self, N>;
 }
 
 pub trait Widget<B, N>: Debug
@@ -59,7 +73,7 @@ where
     B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, B::Context) -> B::Element;
+    fn render(&self, B::RenderContext) -> B::Element;
 
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::default()
@@ -72,7 +86,7 @@ where
     B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, ctx: B::Context) -> B::Element {
+    fn render(&self, ctx: B::RenderContext) -> B::Element {
         self.read().unwrap().render(ctx)
     }
     fn growth_policy(&self) -> FullGrowthPolicy {

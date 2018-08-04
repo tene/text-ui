@@ -11,7 +11,9 @@ pub mod widget;
 
 pub use backend::{Size, TermionBackend};
 pub use input::{Event, InputEvent, MouseEvent, UIEvent};
-pub use widget::{Name, RenderBackend, RenderContext, RenderElement, Widget};
+pub use widget::{
+    Name, RenderBackend, RenderElement, Widget, WidgetEventContext, WidgetRenderContext,
+};
 
 pub type Shared<T> = Arc<RwLock<T>>;
 pub fn shared<T>(item: T) -> Shared<T> {
