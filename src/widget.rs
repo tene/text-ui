@@ -1,6 +1,8 @@
-use input::{InputEvent, UIEvent};
+use input::InputEvent;
 use std::fmt::Debug;
 use std::hash::Hash;
+
+use AppEvent;
 
 pub mod log;
 pub mod readline;
@@ -39,7 +41,7 @@ where
     N: Name,
     B: RenderBackend<N>,
 {
-    fn send_event(&self, UIEvent);
+    fn send_event(&self, AppEvent);
 }
 
 pub trait RenderElement<B, N>

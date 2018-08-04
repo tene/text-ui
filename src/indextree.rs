@@ -6,7 +6,7 @@ pub struct IndexTree<N, I>
 where
     N: Eq + Hash,
 {
-    named: HashMap<N, usize>, // Needs to be renamed to something accurate
+    named: HashMap<N, usize>,
     roots: HashSet<usize>,
     items: Vec<I>,
     parents: Vec<Option<usize>>,

@@ -10,12 +10,18 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    Event, GrowthPolicy, Name, RenderBackend, UIEvent, Widget, WidgetEventContext,
+    AppEvent, GrowthPolicy, InputEvent, Name, RenderBackend, Widget, WidgetEventContext,
     WidgetRenderContext,
 };
 
 mod element;
 use self::element::Block;
+
+#[derive(Debug, PartialEq)]
+enum Event {
+    Input(InputEvent),
+    App(AppEvent),
+}
 
 #[derive(Debug, Clone)]
 pub struct Size {
@@ -85,7 +91,7 @@ impl TermionBackend {
             }
             for event in self.receiver.try_iter() {
                 match event {
-                    Event::UI(UIEvent::Exit) => break 'outer,
+                    Event::App(AppEvent::Exit) => break 'outer,
                     Event::Input(event) => {
                         for cb in ui.callbacks.get_iter(&focus) {
                             use ShouldPropagate::*;
@@ -184,8 +190,8 @@ impl TermionEventContext {
 }
 
 impl<N: Name> WidgetEventContext<TermionBackend, N> for TermionEventContext {
-    fn send_event(&self, event: UIEvent) {
-        let _ = self.sender.send(Event::UI(event));
+    fn send_event(&self, event: AppEvent) {
+        let _ = self.sender.send(Event::App(event));
     }
 }
 

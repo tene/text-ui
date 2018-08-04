@@ -2,8 +2,8 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::readline::ReadlineEvent, InputEvent, RenderBackend, RenderElement, Shared,
-    TermionBackend, UIEvent, Widget, WidgetRenderContext,
+    shared, widget::readline::ReadlineEvent, AppEvent, InputEvent, RenderBackend, RenderElement,
+    Shared, TermionBackend, Widget, WidgetRenderContext,
 };
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
@@ -42,7 +42,7 @@ impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
             None,
             Box::new(move |ctx, e| match e {
                 InputEvent::Key(Key::Esc) => {
-                    ctx.send_event(UIEvent::Exit);
+                    ctx.send_event(AppEvent::Exit);
                     Stop
                 }
                 _ => Continue,

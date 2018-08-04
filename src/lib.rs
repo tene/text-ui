@@ -10,11 +10,17 @@ pub mod input;
 pub mod widget;
 
 pub use backend::{Size, TermionBackend};
-pub use input::{Event, InputEvent, MouseEvent, UIEvent};
+pub use input::{InputEvent, MouseEvent};
 pub use widget::{
     InputCallback, Name, RenderBackend, RenderElement, ShouldPropagate, Widget, WidgetEventContext,
     WidgetRenderContext,
 };
+
+#[derive(Debug, PartialEq)]
+pub enum AppEvent {
+    Exit,
+    // SetFocus(Name)
+}
 
 pub type Shared<T> = Arc<RwLock<T>>;
 pub fn shared<T>(item: T) -> Shared<T> {
