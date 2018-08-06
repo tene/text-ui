@@ -2,11 +2,11 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::readline::ReadlineEvent, AppEvent, InputEvent, RenderBackend, RenderElement,
-    Shared, TermionBackend, Widget, WidgetRenderContext,
+    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, InputEvent,
+    RenderBackend, RenderElement, Shared, TermionBackend, Widget, WidgetRenderContext,
 };
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 enum MyNames {
     Input1,
     Input2,
@@ -14,16 +14,18 @@ enum MyNames {
 
 #[derive(Debug)]
 struct App {
-    pub log: Shared<Log>,
+    pub log1: Shared<Log>,
+    pub log2: Shared<Log>,
     pub rl1: Readline<MyNames>,
     pub rl2: Readline<MyNames>,
 }
 
 impl App {
     pub fn new() -> Self {
-        let log = shared(Log::new());
-        let logref1 = log.clone();
-        let logref2 = log.clone();
+        let log1 = shared(Log::new());
+        let log2 = shared(Log::new());
+        let logref1 = log1.clone();
+        let logref2 = log2.clone();
         let rl1 = Readline::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
             ReadlineEvent::Submitted { line, .. } => match logref1.write() {
                 Ok(mut log) => {
@@ -42,38 +44,45 @@ impl App {
                 Err(_) => false,
             },
         }));
-        App { log, rl1, rl2 }
+        App {
+            log1,
+            log2,
+            rl1,
+            rl2,
+        }
     }
 }
 
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
-    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: B::RenderContext) -> B::Element {
         use text_ui::ShouldPropagate::*;
-        ctx.vbox(vec![&self.log, &self.rl1, &self.rl2])
-            .add_input_handler(
-                None,
-                Box::new(move |ctx, e| match e {
-                    InputEvent::Key(Key::Esc) => {
-                        ctx.send_event(AppEvent::Exit);
-                        Stop
-                    }
-                    InputEvent::Key(Key::Ctrl('a')) => {
-                        ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
-                        Stop
-                    }
-                    InputEvent::Key(Key::Ctrl('b')) => {
-                        ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
-                        Stop
-                    }
-                    _ => Continue,
-                }),
-            )
+        let logs = Linear::hbox(vec![&self.log1, &self.log2]);
+        let ui = Linear::vbox(vec![&logs, &self.rl1, &self.rl2]);
+        ctx.render(&ui).add_input_handler(
+            None,
+            Box::new(move |ctx, e| match e {
+                InputEvent::Key(Key::Esc) => {
+                    ctx.send_event(AppEvent::Exit);
+                    Stop
+                }
+                InputEvent::Key(Key::Ctrl('a')) => {
+                    ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
+                    Stop
+                }
+                InputEvent::Key(Key::Ctrl('b')) => {
+                    ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
+                    Stop
+                }
+                _ => Continue,
+            }),
+        )
     }
 }
 
 fn main() {
     let app = App::new();
-    app.log.write().unwrap().log_msg("asdf");
+    app.log1.write().unwrap().log_msg("asdf");
+    app.log2.write().unwrap().log_msg("qwer");
     let mut be = TermionBackend::new();
     be.run(app, MyNames::Input1);
 }

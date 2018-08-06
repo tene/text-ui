@@ -10,7 +10,7 @@ mod indextree;
 pub mod input;
 pub mod widget;
 
-pub use backend::{Size, TermionBackend};
+pub use backend::TermionBackend;
 pub use input::{InputEvent, MouseEvent};
 pub use widget::{
     InputCallback, Name, RenderBackend, RenderElement, ShouldPropagate, Widget, WidgetEventContext,
@@ -26,6 +26,36 @@ pub enum AppEvent<N: Name> {
 pub type Shared<T> = Arc<RwLock<T>>;
 pub fn shared<T>(item: T) -> Shared<T> {
     Arc::new(RwLock::new(item))
+}
+
+#[derive(Debug, Clone)]
+pub struct Size {
+    pub cols: usize,
+    pub rows: usize,
+}
+
+impl Size {
+    pub fn new(cols: usize, rows: usize) -> Self {
+        Size { cols, rows }
+    }
+    pub fn in_direction(&self, dir: Direction) -> usize {
+        match dir {
+            Direction::Vertical => self.rows,
+            Direction::Horizontal => self.cols,
+        }
+    }
+    pub fn against_direction(&self, dir: Direction) -> usize {
+        match dir {
+            Direction::Horizontal => self.rows,
+            Direction::Vertical => self.cols,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Direction {
+    Vertical,
+    Horizontal,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -57,6 +87,12 @@ impl FullGrowthPolicy {
         let height = GrowthPolicy::Greedy;
         FullGrowthPolicy { width, height }
     }
+    pub fn in_direction(&self, dir: Direction) -> GrowthPolicy {
+        match dir {
+            Direction::Vertical => self.height,
+            Direction::Horizontal => self.width,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,5 +114,62 @@ impl ops::Add for Pos {
         let col = self.col + other.col;
         let row = self.row + other.row;
         Self { col, row }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct RenderBound {
+    pub width: Option<usize>, // Maybe this should be NonZeroUsize?
+    pub height: Option<usize>,
+}
+
+impl RenderBound {
+    pub fn new(width: Option<usize>, height: Option<usize>) -> Self {
+        Self { width, height }
+    }
+    pub fn against_direction(&self, dir: Direction) -> Option<usize> {
+        match dir {
+            Direction::Vertical => self.width,
+            Direction::Horizontal => self.height,
+        }
+    }
+    pub fn in_direction(&self, dir: Direction) -> Option<usize> {
+        match dir {
+            Direction::Horizontal => self.width,
+            Direction::Vertical => self.height,
+        }
+    }
+    pub fn free_direction(&self, dir: Direction) -> Self {
+        match dir {
+            Direction::Vertical => Self {
+                width: self.width,
+                height: None,
+            },
+            Direction::Horizontal => Self {
+                width: None,
+                height: self.height,
+            },
+        }
+    }
+    pub fn constrain_direction(&self, dir: Direction, constraint: usize) -> Self {
+        let new = Some(constraint);
+        match dir {
+            Direction::Vertical => Self {
+                width: self.width,
+                height: new,
+            },
+            Direction::Horizontal => Self {
+                width: new,
+                height: self.height,
+            },
+        }
+    }
+}
+
+impl From<Size> for RenderBound {
+    fn from(size: Size) -> Self {
+        let width = Some(size.cols);
+        let height = Some(size.rows);
+        RenderBound { width, height }
     }
 }

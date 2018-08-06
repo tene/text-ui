@@ -4,17 +4,18 @@ use std::hash::Hash;
 
 use AppEvent;
 
+pub mod layout;
 pub mod log;
 pub mod readline;
 
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {FullGrowthPolicy, Pos, Shared};
+use {Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
 
-pub trait Name: Hash + Eq + Clone + Debug + Send {}
+pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
-impl<N> Name for N where N: Hash + Eq + Clone + Debug + Send {}
+impl<N> Name for N where N: Hash + Eq + Clone + Copy + Debug + Send {}
 
 pub enum ShouldPropagate {
     Continue,
@@ -28,12 +29,11 @@ where
     B: RenderBackend<N>,
     N: Name,
 {
-    //fn constraints()
-    //fn render_widget?  // break cycle by returning different types?
-    //fn line constraintwidth?
+    fn bound(&self) -> RenderBound;
+    fn render(&self, widget: &Widget<B, N>) -> B::Element;
+    fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
     fn line(&mut self, &str) -> B::Element;
     fn text(&mut self, Vec<String>) -> B::Element;
-    fn vbox(&mut self, Vec<&dyn Widget<B, N>>) -> B::Element;
 }
 
 pub trait WidgetEventContext<B, N>
@@ -44,15 +44,23 @@ where
     fn send_event(&self, AppEvent<N>);
 }
 
-pub trait RenderElement<B, N>
+pub trait RenderElement<B, N>: Sized
 where
     N: Name,
     B: RenderBackend<N>,
 {
-    //fn size(&self) -> Size;
+    fn size(&self) -> Size;
     fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self;
     fn add_cursor(self, name: N, pos: Pos) -> Self;
     fn get_cursor(&self, name: &N) -> Option<Pos>;
+    fn vconcat(self, other: Self) -> Self;
+    fn hconcat(self, other: Self) -> Self;
+    fn concat_dir(self, direction: Direction, other: Self) -> Self {
+        match direction {
+            Direction::Horizontal => self.hconcat(other),
+            Direction::Vertical => self.vconcat(other),
+        }
+    }
 }
 
 pub trait RenderBackend<N: Name>: Sized {
@@ -80,8 +88,12 @@ where
     N: Name,
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
-        self.read().unwrap().render(ctx)
+        ctx.render(&*self.read().unwrap())
     }
+
+    // XXX TODO need to replace growth_policy with fn get_bounds(&self, bounds: Bounds) -> Bounds
+    // Must return something that fits within the given bounds
+    // This is needed for layout, to propagate back up minimum sizes from children
     fn growth_policy(&self) -> FullGrowthPolicy {
         self.read().unwrap().growth_policy()
     }

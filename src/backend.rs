@@ -10,7 +10,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    AppEvent, GrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, Widget,
+    AppEvent, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Widget,
     WidgetEventContext, WidgetRenderContext,
 };
 
@@ -21,18 +21,6 @@ use self::element::Block;
 enum Event<N: Name> {
     Input(InputEvent),
     App(AppEvent<N>),
-}
-
-#[derive(Debug, Clone)]
-pub struct Size {
-    pub cols: usize,
-    pub rows: usize,
-}
-
-impl Size {
-    pub fn new(cols: usize, rows: usize) -> Self {
-        Size { cols, rows }
-    }
 }
 
 pub struct TermionBackend<N: Name> {
@@ -90,8 +78,9 @@ impl<N: Name + 'static> TermionBackend<N> {
             }
         });
         let event_ctx = TermionEventContext::new(self.sender.clone());
+        let render_ctx = TermionRenderContext::new(self.size.clone().into());
         'outer: loop {
-            let ui: Block<N> = app.render(TermionRenderContext::new(self.size.clone()));
+            let ui: Block<N> = render_ctx.render(&app);
             self.paint_image(&ui, &focus);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
@@ -125,67 +114,61 @@ impl<N: Name + 'static> Default for TermionBackend<N> {
 
 #[derive(Clone)]
 pub struct TermionRenderContext {
-    size: Size,
+    bound: RenderBound,
 }
 
 impl TermionRenderContext {
-    fn new(size: Size) -> Self {
-        Self { size }
+    fn new(bound: RenderBound) -> Self {
+        Self { bound }
     }
-    fn with_rows(&self, rows: usize) -> Self {
-        let cols = self.size.cols;
-        let size = Size { rows, cols };
-        Self::new(size)
+    /*fn with_rows(&self, rows: usize) -> Self {
+        let mut bound = self.bound.clone();
+        bound.height = Some(rows);
+        Self::new(bound)
     }
-    fn _with_cols(&self, cols: usize) -> Self {
-        let rows = self.size.rows;
-        let size = Size { rows, cols };
-        Self::new(size)
-    }
+    fn with_cols(&self, cols: usize) -> Self {
+        let mut bound = self.bound.clone();
+        bound.width = Some(cols);
+        Self::new(bound)
+    }*/
 }
 
-// XXX TODO These should be generic default impls
 impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext {
+    fn render(&self, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
+        widget.render(self.clone())
+    }
+    fn render_sized(&self, bound: RenderBound, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
+        let block = Self::new(bound).render(widget);
+        let size = block.size();
+        if let Some(width) = bound.width {
+            //assert_eq!(width, size.cols);
+            if width != size.cols {
+                panic!(
+                    "bad block width!\nwidget: {:#?}\nbound: {:?}\nblock: {:#?}",
+                    widget, bound, block
+                );
+            }
+        }
+        if let Some(height) = bound.height {
+            //assert_eq!(height, size.rows);
+            if height != size.rows {
+                panic!(
+                    "bad block height!\nwidget: {:#?}\nbound: {:?}\nblock: {:#?}",
+                    widget, bound, block
+                );
+            }
+        }
+        block
+    }
+    fn bound(&self) -> RenderBound {
+        self.bound.clone()
+    }
+
     fn line(&mut self, content: &str) -> Block<N> {
-        Block::line(content, self.size.cols)
+        Block::line(content, self.bound)
     }
     fn text(&mut self, content: Vec<String>) -> Block<N> {
-        Block::from_text(
-            content,
-            self.size.cols,
-            self.size.rows,
-            GrowthPolicy::Greedy,
-        )
-    }
-    fn vbox(&mut self, widgets: Vec<&dyn Widget<TermionBackend<N>, N>>) -> Block<N> {
-        let (fixed, greedy): (
-            Vec<(usize, &dyn Widget<TermionBackend<N>, N>)>,
-            Vec<(usize, &dyn Widget<TermionBackend<N>, N>)>,
-        ) = widgets
-            .into_iter()
-            .enumerate()
-            .partition(|(_, w)| w.growth_policy().height == GrowthPolicy::FixedSize);
-        let mut remaining_rows = self.size.rows;
-        let cols = self.size.cols;
-        let greedy_count = greedy.len();
-        let mut blocks: Vec<(usize, Block<N>)> = fixed
-            .into_iter()
-            .map(|(i, w)| {
-                let b = w.render(self.with_rows(remaining_rows));
-                remaining_rows -= b.height;
-                (i, b)
-            }).collect();
-        blocks.extend(greedy.into_iter().map(|(i, w)| {
-            let b = w.render(self.with_rows(remaining_rows / greedy_count));
-            remaining_rows -= b.height;
-            (i, b)
-        }));
-        blocks.sort_by_key(|a| a.0);
-        let init = Block::new(vec![], cols, 0);
-        blocks.into_iter().fold(init, |mut acc, (_, b)| {
-            acc.vconcat(b);
-            acc
-        })
+        Block::from_text(content, self.bound)
     }
 }
 
