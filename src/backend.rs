@@ -1,6 +1,6 @@
 //use termion::color::{self, Color};
 //use termion::cursor::{Goto, Hide, Show};
-use termion::cursor::Goto;
+use termion::cursor::{Goto, Hide, Show};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
@@ -10,8 +10,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    AppEvent, GrowthPolicy, InputEvent, Name, RenderBackend, Widget, WidgetEventContext,
-    WidgetRenderContext,
+    AppEvent, GrowthPolicy, InputEvent, Name, RenderBackend, RenderElement, Widget,
+    WidgetEventContext, WidgetRenderContext,
 };
 
 mod element;
@@ -55,13 +55,23 @@ impl<N: Name + 'static> TermionBackend<N> {
             receiver,
         }
     }
-    fn paint_image(&mut self, image: &Block<N>) {
+    fn paint_image(&mut self, image: &Block<N>, name: &N) {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
             for span in &line.spans {
                 write!(self.screen, "{}", span.text).unwrap();
             }
+        }
+        if let Some(pos) = image.get_cursor(name) {
+            write!(
+                self.screen,
+                "{}{}",
+                Goto(pos.col as u16 + 1, pos.row as u16 + 1),
+                Show
+            );
+        } else {
+            write!(self.screen, "{}", Hide);
         }
         self.screen.flush().unwrap();
     }
@@ -82,7 +92,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         let event_ctx = TermionEventContext::new(self.sender.clone());
         'outer: loop {
             let ui: Block<N> = app.render(TermionRenderContext::new(self.size.clone()));
-            self.paint_image(&ui);
+            self.paint_image(&ui, &focus);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
                 let event = self.receiver.recv().unwrap();

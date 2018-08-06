@@ -1,8 +1,9 @@
 use indextree::IndexTree;
+use std::collections::HashMap;
 use std::iter::repeat;
 use unicode_segmentation::UnicodeSegmentation;
 
-use {GrowthPolicy, InputCallback, Name, RenderElement};
+use {GrowthPolicy, InputCallback, Name, Pos, RenderElement};
 
 use super::TermionBackend;
 
@@ -65,6 +66,7 @@ pub struct Block<N: Name> {
     pub width: usize,
     pub height: usize,
     pub callbacks: IndexTree<N, InputCallback<TermionBackend<N>, N>>,
+    pub cursors: HashMap<N, Pos>,
 }
 
 impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
@@ -76,12 +78,20 @@ impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
         self.callbacks.push(name, callback);
         self
     }
+    fn add_cursor(mut self, name: N, pos: Pos) -> Self {
+        self.cursors.insert(name, pos);
+        self
+    }
+    fn get_cursor(&self, name: &N) -> Option<Pos> {
+        self.cursors.get(name).cloned()
+    }
 }
 
 impl<N: Name> Block<N> {
     pub fn new(lines: Vec<Line>, width: usize, height: usize) -> Self {
         Block {
             callbacks: IndexTree::new(),
+            cursors: HashMap::new(),
             lines,
             width,
             height,
@@ -116,6 +126,9 @@ impl<N: Name> Block<N> {
         self.lines.append(&mut other.lines);
         // map callback position
         self.callbacks.append(&mut other.callbacks);
+        let offset = Pos::new(0, self.height);
+        self.cursors
+            .extend(other.cursors.into_iter().map(move |(n, p)| (n, p + offset)));
         self.height += other.height;
     }
 }

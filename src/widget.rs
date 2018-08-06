@@ -10,7 +10,7 @@ pub mod readline;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {FullGrowthPolicy, Shared};
+use {FullGrowthPolicy, Pos, Shared};
 
 pub trait Name: Hash + Eq + Clone + Debug + Send {}
 
@@ -51,6 +51,8 @@ where
 {
     //fn size(&self) -> Size;
     fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self;
+    fn add_cursor(self, name: N, pos: Pos) -> Self;
+    fn get_cursor(&self, name: &N) -> Option<Pos>;
 }
 
 pub trait RenderBackend<N: Name>: Sized {

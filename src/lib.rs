@@ -2,6 +2,7 @@
 extern crate termion;
 extern crate unicode_segmentation;
 
+use std::ops;
 use std::sync::{Arc, RwLock};
 
 pub mod backend;
@@ -55,5 +56,27 @@ impl FullGrowthPolicy {
         let width = GrowthPolicy::FixedSize;
         let height = GrowthPolicy::Greedy;
         FullGrowthPolicy { width, height }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Pos {
+    pub col: usize,
+    pub row: usize,
+}
+
+impl Pos {
+    pub fn new(col: usize, row: usize) -> Self {
+        Self { col, row }
+    }
+}
+
+impl ops::Add for Pos {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        let col = self.col + other.col;
+        let row = self.row + other.row;
+        Self { col, row }
     }
 }
