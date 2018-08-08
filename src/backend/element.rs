@@ -21,7 +21,7 @@ pub fn split_line_graphemes(line: &str, width: usize) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Span {
     pub attr: String,
     pub text: String,
@@ -48,7 +48,7 @@ impl Span {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Line {
     pub spans: Vec<Span>,
     pub width: usize,

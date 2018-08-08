@@ -6,6 +6,7 @@ use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
 
 use std::io::{stdin, stdout, Stdout, Write};
+use std::iter::repeat;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
@@ -15,7 +16,7 @@ use {
 };
 
 mod element;
-use self::element::Block;
+use self::element::{Block, Line};
 
 #[derive(Debug, PartialEq)]
 enum Event<N: Name> {
@@ -28,6 +29,7 @@ pub struct TermionBackend<N: Name> {
     pub size: Size,
     receiver: Receiver<Event<N>>,
     sender: Sender<Event<N>>,
+    last_frame: Vec<Line>,
 }
 
 impl<N: Name + 'static> TermionBackend<N> {
@@ -36,20 +38,26 @@ impl<N: Name + 'static> TermionBackend<N> {
         let (width, height) = termion::terminal_size().unwrap();
         let size = Size::new(width as usize, height as usize);
         let (sender, receiver) = channel();
+        let last_frame = repeat(Line::blank(width as usize))
+            .take(height as usize)
+            .collect();
         TermionBackend {
             size,
             screen,
             sender,
             receiver,
+            last_frame,
         }
     }
     fn paint_image(&mut self, image: &Block<N>, name: &N) {
-        // XXX TODO Save lines from last frame, only update changed lines
-        write!(self.screen, "{}", termion::clear::All).unwrap();
-        for (i, line) in image.lines.iter().enumerate() {
-            write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
-            for span in &line.spans {
-                write!(self.screen, "{}", span.text).unwrap();
+        //write!(self.screen, "{}", termion::clear::All).unwrap();
+        for (i, (new_line, last_line)) in image.lines.iter().zip(self.last_frame.iter()).enumerate()
+        {
+            if new_line != last_line {
+                write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
+                for span in &new_line.spans {
+                    write!(self.screen, "{}", span.text).unwrap();
+                }
             }
         }
         if let Some(pos) = image.get_cursor(name) {
@@ -63,9 +71,11 @@ impl<N: Name + 'static> TermionBackend<N> {
             write!(self.screen, "{}", Hide);
         }
         self.screen.flush().unwrap();
+        self.last_frame = image.lines.clone();
     }
     pub fn run(&mut self, app: impl Widget<Self, N>, mut focus: N) {
         let sender = self.sender.clone();
+        write!(self.screen, "{}", termion::clear::All).unwrap();
         thread::spawn(move || {
             /*let stdin = stdin();
             let mut events = stdin.events();*/
