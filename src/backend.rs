@@ -74,6 +74,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         self.last_frame = image.lines.clone();
     }
     pub fn run(&mut self, app: impl Widget<Self, N>, mut focus: N) {
+        // XXX TODO How to handle window resize??
         let sender = self.sender.clone();
         write!(self.screen, "{}", termion::clear::All).unwrap();
         thread::spawn(move || {
