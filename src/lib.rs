@@ -13,8 +13,8 @@ pub mod widget;
 pub use backend::TermionBackend;
 pub use input::{InputEvent, MouseEvent};
 pub use widget::{
-    InputCallback, Name, RenderBackend, RenderElement, ShouldPropagate, Widget, WidgetEventContext,
-    WidgetRenderContext,
+    InputCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
+    WidgetEventContext, WidgetRenderContext,
 };
 
 #[derive(Debug, PartialEq)]
@@ -56,6 +56,15 @@ impl Size {
 pub enum Direction {
     Vertical,
     Horizontal,
+}
+
+impl Direction {
+    pub fn against(&self) -> Self {
+        match self {
+            Direction::Vertical => Direction::Horizontal,
+            Direction::Horizontal => Direction::Vertical,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -163,6 +172,9 @@ impl RenderBound {
                 height: self.height,
             },
         }
+    }
+    pub fn constrain_against(&self, dir: Direction, constraint: usize) -> Self {
+        self.constrain_direction(dir.against(), constraint)
     }
 }
 

@@ -2,7 +2,7 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, InputEvent,
+    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, InputEvent, Line,
     RenderBackend, RenderElement, Shared, TermionBackend, Widget, WidgetRenderContext,
 };
 
@@ -56,8 +56,10 @@ impl App {
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         use text_ui::ShouldPropagate::*;
-        let logs = Linear::hbox(vec![&self.log1, &self.log2]);
-        let ui = Linear::vbox(vec![&logs, &self.rl1, &self.rl2]);
+        let vline = Line::vertical();
+        let hline = Line::horizontal();
+        let logs = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
+        let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
         ctx.render(&ui).add_input_handler(
             None,
             Box::new(move |ctx, e| match e {
@@ -81,8 +83,8 @@ impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
 
 fn main() {
     let app = App::new();
-    app.log1.write().unwrap().log_msg("asdf");
-    app.log2.write().unwrap().log_msg("qwer");
+    app.log1.write().unwrap().log_msg("Ctrl+A here");
+    app.log2.write().unwrap().log_msg("Ctrl+B here");
     let mut be = TermionBackend::new();
     be.run(app, MyNames::Input1);
 }

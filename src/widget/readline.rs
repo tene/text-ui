@@ -113,7 +113,7 @@ where
     N: 'static + Name,
     B: RenderBackend<N>,
 {
-    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: B::RenderContext) -> B::Element {
         let inner = self.inner.clone();
         let name = inner.read().unwrap().name;
         let line = inner.read().unwrap().line.to_string();

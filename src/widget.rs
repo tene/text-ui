@@ -5,9 +5,12 @@ use std::hash::Hash;
 use AppEvent;
 
 pub mod layout;
+pub mod line;
 pub mod log;
 pub mod readline;
 
+pub use self::layout::Linear;
+pub use self::line::Line;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
@@ -31,9 +34,10 @@ where
 {
     fn bound(&self) -> RenderBound;
     fn render(&self, widget: &Widget<B, N>) -> B::Element;
+    fn with_bound(&self, bound: RenderBound) -> Self;
     fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
-    fn line(&mut self, &str) -> B::Element;
-    fn text(&mut self, Vec<String>) -> B::Element;
+    fn line(&self, &str) -> B::Element;
+    fn text(&self, Vec<String>) -> B::Element;
 }
 
 pub trait WidgetEventContext<B, N>

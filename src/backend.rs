@@ -44,6 +44,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         }
     }
     fn paint_image(&mut self, image: &Block<N>, name: &N) {
+        // XXX TODO Save lines from last frame, only update changed lines
         write!(self.screen, "{}", termion::clear::All).unwrap();
         for (i, line) in image.lines.iter().enumerate() {
             write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
@@ -137,6 +138,9 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
     fn render(&self, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
         widget.render(self.clone())
     }
+    fn with_bound(&self, bound: RenderBound) -> Self {
+        Self::new(bound)
+    }
     fn render_sized(&self, bound: RenderBound, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
         let block = Self::new(bound).render(widget);
         let size = block.size();
@@ -164,10 +168,10 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
         self.bound.clone()
     }
 
-    fn line(&mut self, content: &str) -> Block<N> {
+    fn line(&self, content: &str) -> Block<N> {
         Block::line(content, self.bound)
     }
-    fn text(&mut self, content: Vec<String>) -> Block<N> {
+    fn text(&self, content: Vec<String>) -> Block<N> {
         Block::from_text(content, self.bound)
     }
 }

@@ -29,7 +29,7 @@ where
     B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, mut ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: B::RenderContext) -> B::Element {
         let scroll_pos = self.scroll_pos.clone();
         ctx.text(self.lines.clone()).add_input_handler(
             None,
