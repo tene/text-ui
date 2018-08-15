@@ -5,6 +5,8 @@ use termion::input::{MouseTerminal, TermRead};
 use termion::raw::{IntoRawMode, RawTerminal};
 use termion::screen::AlternateScreen;
 
+use signal_hook::iterator::Signals;
+
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -22,6 +24,7 @@ use self::element::{Block, Line};
 enum Event<N: Name> {
     Input(InputEvent),
     App(AppEvent<N>),
+    Resize,
 }
 
 pub struct TermionBackend<N: Name> {
@@ -74,24 +77,37 @@ impl<N: Name + 'static> TermionBackend<N> {
         self.last_frame = image.lines.clone();
     }
     pub fn run(&mut self, app: impl Widget<Self, N>, mut focus: N) {
-        // XXX TODO How to handle window resize??
-        let sender = self.sender.clone();
-        write!(self.screen, "{}", termion::clear::All).unwrap();
+        let input_sender = self.sender.clone();
         thread::spawn(move || {
             /*let stdin = stdin();
             let mut events = stdin.events();*/
             'outer: loop {
                 for event in stdin().events() {
-                    match sender.send(Event::Input(event.unwrap())) {
+                    match input_sender.send(Event::Input(event.unwrap())) {
                         Ok(()) => continue,
                         Err(_) => break 'outer,
                     }
                 }
             }
         });
+        let signal_sender = self.sender.clone();
+        let signals = Signals::new(&[libc::SIGWINCH]).expect("Failed to register signal handler");
+        thread::spawn(move || 'outer: loop {
+            for signal in &signals {
+                let event = match signal {
+                    libc::SIGWINCH => Event::Resize,
+                    _ => continue,
+                };
+                match signal_sender.send(event) {
+                    Ok(()) => continue,
+                    Err(_) => break 'outer,
+                }
+            }
+        });
         let event_ctx = TermionEventContext::new(self.sender.clone());
-        let render_ctx = TermionRenderContext::new(self.size.clone().into());
+        write!(self.screen, "{}", termion::clear::All).unwrap();
         'outer: loop {
+            let render_ctx = TermionRenderContext::new(self.size.clone().into());
             let ui: Block<N> = render_ctx.render(&app);
             self.paint_image(&ui, &focus);
             {
@@ -103,6 +119,13 @@ impl<N: Name + 'static> TermionBackend<N> {
                 match event {
                     Event::App(AppEvent::Exit) => break 'outer,
                     Event::App(AppEvent::SetFocus(f)) => focus = f,
+                    Event::Resize => {
+                        let (width, height) = termion::terminal_size().unwrap();
+                        let size = Size::new(width as usize, height as usize);
+                        self.size = size;
+                        self.last_frame
+                            .resize(height as usize, Line::blank(width as usize));
+                    }
                     Event::Input(event) => {
                         for cb in ui.callbacks.get_iter(&focus) {
                             use ShouldPropagate::*;

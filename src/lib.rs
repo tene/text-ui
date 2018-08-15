@@ -1,4 +1,6 @@
 #![feature(rust_2018_preview)]
+extern crate libc;
+extern crate signal_hook;
 extern crate termion;
 extern crate unicode_segmentation;
 
