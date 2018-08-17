@@ -13,7 +13,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    AppEvent, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Widget,
+    AppEvent, Fragment, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Widget,
     WidgetEventContext, WidgetRenderContext,
 };
 
@@ -202,11 +202,13 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
         self.bound.clone()
     }
 
-    fn line(&self, content: &str) -> Block<N> {
-        Block::line(content, self.bound)
+    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
+        let fragment: Fragment = content.into();
+        Block::line(fragment, self.bound)
     }
-    fn text(&self, content: Vec<String>) -> Block<N> {
-        Block::from_text(content, self.bound)
+    fn text<F: Into<Fragment>>(&self, content: F) -> Block<N> {
+        let fragment: Fragment = content.into();
+        Block::from_text(fragment, self.bound)
     }
 }
 

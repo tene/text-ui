@@ -14,7 +14,7 @@ pub use self::line::Line;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
+use {Direction, Fragment, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -36,8 +36,8 @@ where
     fn render(&self, widget: &Widget<B, N>) -> B::Element;
     fn with_bound(&self, bound: RenderBound) -> Self;
     fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
-    fn line(&self, &str) -> B::Element;
-    fn text(&self, Vec<String>) -> B::Element;
+    fn line<F: Into<Fragment>>(&self, F) -> B::Element;
+    fn text<F: Into<Fragment>>(&self, F) -> B::Element;
 }
 
 pub trait WidgetEventContext<B, N>

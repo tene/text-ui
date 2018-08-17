@@ -214,3 +214,33 @@ pub struct Fragment {
     pub bg: Option<Color>,
     pub text: String,
 }
+
+impl Fragment {
+    pub fn new(fg: Option<Color>, bg: Option<Color>, text: String) -> Self {
+        Self { fg, bg, text }
+    }
+}
+
+impl From<String> for Fragment {
+    fn from(text: String) -> Fragment {
+        Fragment::new(None, None, text)
+    }
+}
+
+impl From<&str> for Fragment {
+    fn from(text: &str) -> Fragment {
+        Fragment::new(None, None, text.to_owned())
+    }
+}
+
+impl From<&String> for Fragment {
+    fn from(text: &String) -> Fragment {
+        Fragment::new(None, None, text.clone())
+    }
+}
+
+impl From<Vec<String>> for Fragment {
+    fn from(text: Vec<String>) -> Fragment {
+        Fragment::new(None, None, text.join("\n"))
+    }
+}
