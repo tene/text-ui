@@ -187,3 +187,30 @@ impl From<Size> for RenderBound {
         RenderBound { width, height }
     }
 }
+
+pub enum Color {
+    LightBlack,
+    LightBlue,
+    LightCyan,
+    LightGreen,
+    LightMagenta,
+    LightRed,
+    LightWhite,
+    LightYellow,
+    Black,
+    Blue,
+    Cyan,
+    Green,
+    Magenta,
+    Red,
+    White,
+    Yellow,
+    Rgb(u8, u8, u8),
+    Reset,
+}
+
+pub struct Fragment {
+    pub fg: Option<Color>,
+    pub bg: Option<Color>,
+    pub text: String,
+}
