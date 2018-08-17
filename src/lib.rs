@@ -175,6 +175,12 @@ impl RenderBound {
             },
         }
     }
+    pub fn constrain_height(&self, constraint: usize) -> Self {
+        Self {
+            width: self.width,
+            height: Some(constraint),
+        }
+    }
     pub fn constrain_against(&self, dir: Direction, constraint: usize) -> Self {
         self.constrain_direction(dir.against(), constraint)
     }
@@ -188,6 +194,7 @@ impl From<Size> for RenderBound {
     }
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum Color {
     LightBlack,
     LightBlue,

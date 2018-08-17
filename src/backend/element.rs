@@ -2,11 +2,82 @@ use indextree::IndexTree;
 use std::collections::HashMap;
 use std::fmt;
 use std::iter::repeat;
+use termion::color as termion_color;
+use termion::color::Color as TermColor;
 use unicode_segmentation::UnicodeSegmentation;
 
-use {InputCallback, Name, Pos, RenderBound, RenderElement, Size};
+use {Color, Fragment, InputCallback, Name, Pos, RenderBound, RenderElement, Size};
 
 use super::TermionBackend;
+
+// This is redundant because termion colors are not sized, and I didn't want to add a box everywhere
+impl TermColor for &Color {
+    fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Color::LightBlack => termion_color::LightBlack.write_fg(f),
+            Color::LightBlue => termion_color::LightBlue.write_fg(f),
+            Color::LightCyan => termion_color::LightCyan.write_fg(f),
+            Color::LightGreen => termion_color::LightGreen.write_fg(f),
+            Color::LightMagenta => termion_color::LightMagenta.write_fg(f),
+            Color::LightRed => termion_color::LightRed.write_fg(f),
+            Color::LightWhite => termion_color::LightWhite.write_fg(f),
+            Color::LightYellow => termion_color::LightYellow.write_fg(f),
+            Color::Black => termion_color::Black.write_fg(f),
+            Color::Blue => termion_color::Blue.write_fg(f),
+            Color::Cyan => termion_color::Cyan.write_fg(f),
+            Color::Green => termion_color::Green.write_fg(f),
+            Color::Magenta => termion_color::Magenta.write_fg(f),
+            Color::Red => termion_color::Red.write_fg(f),
+            Color::White => termion_color::White.write_fg(f),
+            Color::Yellow => termion_color::Yellow.write_fg(f),
+            Color::Rgb(r, g, b) => termion_color::Rgb(*r, *g, *b).write_fg(f),
+            Color::Reset => termion_color::Reset.write_fg(f),
+        }
+    }
+    fn write_bg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Color::LightBlack => termion_color::LightBlack.write_bg(f),
+            Color::LightBlue => termion_color::LightBlue.write_bg(f),
+            Color::LightCyan => termion_color::LightCyan.write_bg(f),
+            Color::LightGreen => termion_color::LightGreen.write_bg(f),
+            Color::LightMagenta => termion_color::LightMagenta.write_bg(f),
+            Color::LightRed => termion_color::LightRed.write_bg(f),
+            Color::LightWhite => termion_color::LightWhite.write_bg(f),
+            Color::LightYellow => termion_color::LightYellow.write_bg(f),
+            Color::Black => termion_color::Black.write_bg(f),
+            Color::Blue => termion_color::Blue.write_bg(f),
+            Color::Cyan => termion_color::Cyan.write_bg(f),
+            Color::Green => termion_color::Green.write_bg(f),
+            Color::Magenta => termion_color::Magenta.write_bg(f),
+            Color::Red => termion_color::Red.write_bg(f),
+            Color::White => termion_color::White.write_bg(f),
+            Color::Yellow => termion_color::Yellow.write_bg(f),
+            Color::Rgb(r, g, b) => termion_color::Rgb(*r, *g, *b).write_bg(f),
+            Color::Reset => termion_color::Reset.write_bg(f),
+        }
+    }
+}
+
+fn termion_attr_fragment(frag: &Fragment) -> String {
+    match (&frag.fg, &frag.bg) {
+        (Some(fg), Some(bg)) => format!("{}{}", termion_color::Fg(fg), termion_color::Bg(bg)),
+        (Some(fg), None) => format!(
+            "{}{}",
+            termion_color::Fg(fg),
+            termion_color::Bg(termion_color::Reset)
+        ),
+        (None, Some(bg)) => format!(
+            "{}{}",
+            termion_color::Fg(termion_color::Reset),
+            termion_color::Bg(bg)
+        ),
+        (None, None) => format!(
+            "{}{}",
+            termion_color::Fg(termion_color::Reset),
+            termion_color::Bg(termion_color::Reset)
+        ),
+    }
+}
 
 pub fn split_line_graphemes(line: &str, width: usize) -> Vec<String> {
     let mut letters: Vec<&str> = UnicodeSegmentation::graphemes(line, true).collect();
@@ -140,33 +211,16 @@ impl<N: Name> Block<N> {
             height,
         }
     }
-    pub fn line(text: &str, bound: RenderBound) -> Self {
-        let line: Line = match bound.width {
-            Some(width) => Span::from_str_constrained("".to_owned(), text, width).into(),
-            None => Span::from_str_unconstrained("".to_owned(), text).into(),
-        };
-        let width = line.width;
-        match bound.height {
-            None => Block::new(vec![line], width, 1),
-            Some(height) => {
-                let blank = Line::blank(width);
-                let lines: Vec<Line> = Some(line)
-                    .into_iter()
-                    .chain(repeat(blank))
-                    .take(height)
-                    .collect();
-                Block::new(lines, width, height)
-            }
-        }
-    }
-    pub fn from_text(text: Vec<String>, bound: RenderBound) -> Self {
+    pub fn from_fragment(frag: Fragment, bound: RenderBound) -> Self {
+        let attr = termion_attr_fragment(&frag);
         let width = bound
             .width
             .expect("Constructing text without width constraint");
-        let lines = text
-            .into_iter()
+        let lines = frag
+            .text
+            .lines()
             .flat_map(|l| split_line_graphemes(&l, width).into_iter())
-            .map(|l| Span::new("".to_owned(), l, width).into());
+            .map(|l| Span::new(attr.clone(), l, width).into());
         let lines: Vec<Line> = match bound.height {
             None => lines.collect(),
             Some(height) => lines

@@ -1,15 +1,19 @@
 use input::{MouseButton, MouseEvent};
-use {shared, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget, WidgetRenderContext};
+use {
+    shared, Color, Fragment, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget,
+    WidgetRenderContext,
+};
 
 #[derive(Debug, Default)]
 pub struct Log {
     pub lines: Vec<String>,
     pub scroll_pos: Shared<usize>,
     pub selected: Option<usize>,
+    pub fg: Option<Color>,
 }
 
 impl Log {
-    pub fn new() -> Self {
+    pub fn new(fg: Option<Color>) -> Self {
         let lines = vec![];
         let scroll_pos = shared(0);
         let selected = None;
@@ -17,6 +21,7 @@ impl Log {
             lines,
             scroll_pos,
             selected,
+            fg,
         }
     }
     pub fn log_msg(&mut self, msg: &str) {
@@ -31,7 +36,9 @@ where
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let scroll_pos = self.scroll_pos.clone();
-        ctx.text(self.lines.clone()).add_input_handler(
+        let mut frag: Fragment = self.lines.clone().into();
+        frag.fg = self.fg;
+        ctx.text(frag).add_input_handler(
             None,
             Box::new(move |_ctx, e| {
                 use ShouldPropagate::*;

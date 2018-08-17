@@ -59,7 +59,7 @@ impl<N: Name + 'static> TermionBackend<N> {
             if new_line != last_line {
                 write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
                 for span in &new_line.spans {
-                    write!(self.screen, "{}", span.text).unwrap();
+                    write!(self.screen, "{}{}", span.attr, span.text).unwrap();
                 }
             }
         }
@@ -204,11 +204,11 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
 
     fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
-        Block::line(fragment, self.bound)
+        Block::from_fragment(fragment, self.bound.constrain_height(1))
     }
     fn text<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
-        Block::from_text(fragment, self.bound)
+        Block::from_fragment(fragment, self.bound)
     }
 }
 

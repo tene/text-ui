@@ -2,8 +2,8 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, InputEvent, Line,
-    RenderBackend, RenderElement, Shared, TermionBackend, Widget, WidgetRenderContext,
+    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, Color, InputEvent,
+    Line, RenderBackend, RenderElement, Shared, TermionBackend, Widget, WidgetRenderContext,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -22,8 +22,8 @@ struct App {
 
 impl App {
     pub fn new() -> Self {
-        let log1 = shared(Log::new());
-        let log2 = shared(Log::new());
+        let log1 = shared(Log::new(Some(Color::Red)));
+        let log2 = shared(Log::new(Some(Color::LightGreen)));
         let logref1 = log1.clone();
         let logref2 = log2.clone();
         let rl1 = Readline::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
