@@ -1,8 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
 
-// Clippy does not see this, triggers a false positive on new_without_default_derive
-#[derive(Default)]
 pub struct IndexTree<N, I>
 where
     N: Eq + Hash,
@@ -78,6 +76,15 @@ where
             parents: &self.parents,
             idx: self.named.get(name).cloned(),
         }
+    }
+}
+
+impl<N, I> Default for IndexTree<N, I>
+where
+    N: Eq + Hash,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

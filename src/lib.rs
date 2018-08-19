@@ -1,7 +1,5 @@
 #![feature(rust_2018_preview)]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
-// new_without_default_derive is hitting a false positive in indextree.rs
-#![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
 
 extern crate libc;
 extern crate signal_hook;
