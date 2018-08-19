@@ -76,7 +76,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         self.screen.flush().unwrap();
         self.last_frame = image.lines.clone();
     }
-    pub fn run(&mut self, app: impl Widget<Self, N>, mut focus: N) {
+    pub fn run(&mut self, app: &impl Widget<Self, N>, mut focus: N) {
         let input_sender = self.sender.clone();
         thread::spawn(move || {
             /*let stdin = stdin();
@@ -108,7 +108,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         'outer: loop {
             let render_ctx = TermionRenderContext::new(self.size.clone().into());
-            let ui: Block<N> = render_ctx.render(&app);
+            let ui: Block<N> = render_ctx.render(app);
             self.paint_image(&ui, &focus);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
@@ -199,16 +199,16 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
         block
     }
     fn bound(&self) -> RenderBound {
-        self.bound.clone()
+        self.bound
     }
 
     fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
-        Block::from_fragment(fragment, self.bound.constrain_height(1))
+        Block::from_fragment(&fragment, self.bound.constrain_height(1))
     }
     fn text<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
-        Block::from_fragment(fragment, self.bound)
+        Block::from_fragment(&fragment, self.bound)
     }
 }
 

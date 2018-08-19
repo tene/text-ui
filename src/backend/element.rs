@@ -211,8 +211,8 @@ impl<N: Name> Block<N> {
             height,
         }
     }
-    pub fn from_fragment(frag: Fragment, bound: RenderBound) -> Self {
-        let attr = termion_attr_fragment(&frag);
+    pub fn from_fragment(frag: &Fragment, bound: RenderBound) -> Self {
+        let attr = termion_attr_fragment(frag);
         let width = bound
             .width
             .expect("Constructing text without width constraint");

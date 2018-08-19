@@ -86,5 +86,5 @@ fn main() {
     app.log1.write().unwrap().log_msg("Ctrl+A here");
     app.log2.write().unwrap().log_msg("Ctrl+B here");
     let mut be = TermionBackend::new();
-    be.run(app, MyNames::Input1);
+    be.run(&app, MyNames::Input1);
 }

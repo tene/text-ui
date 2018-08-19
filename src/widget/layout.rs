@@ -35,10 +35,9 @@ where
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let dir = self.direction;
-        let (fixed, greedy): (
-            Vec<(usize, &dyn Widget<B, N>)>,
-            Vec<(usize, &dyn Widget<B, N>)>,
-        ) = self
+        // Clippy complains about a complex type here; I'm not convinced it's an improvement.
+        type Segments<T> = (Vec<(usize, T)>, Vec<(usize, T)>);
+        let (fixed, greedy): Segments<&dyn Widget<B, N>> = self
             .widgets
             .clone()
             .into_iter()
@@ -78,9 +77,7 @@ where
         blocks.sort_by_key(|a| a.0);
         let mut blocks = blocks.into_iter().map(|(_, b)| b);
         let init = blocks.next().expect("Linear layout with no children");
-        blocks
-            .into_iter()
-            .fold(init, |acc, b| acc.concat_dir(dir, b))
+        blocks.fold(init, |acc, b| acc.concat_dir(dir, b))
     }
 }
 
