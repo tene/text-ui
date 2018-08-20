@@ -13,8 +13,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    AppEvent, Fragment, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Widget,
-    WidgetEventContext, WidgetRenderContext,
+    App, AppEvent, Fragment, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size,
+    Widget, WidgetEventContext, WidgetRenderContext,
 };
 
 mod element;
@@ -76,7 +76,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         self.screen.flush().unwrap();
         self.last_frame = image.lines.clone();
     }
-    pub fn run(&mut self, app: &impl Widget<Self, N>, mut focus: N) {
+    pub fn run(&mut self, app: &mut impl App<Self, N>, mut focus: N) {
         let input_sender = self.sender.clone();
         thread::spawn(move || {
             /*let stdin = stdin();
@@ -107,7 +107,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         let event_ctx = TermionEventContext::new(self.sender.clone());
         write!(self.screen, "{}", termion::clear::All).unwrap();
         'outer: loop {
-            let render_ctx = TermionRenderContext::new(self.size.clone().into());
+            let render_ctx = TermionRenderContext::new(self.size.into());
             let ui: Block<N> = render_ctx.render(app);
             self.paint_image(&ui, &focus);
             {
@@ -125,10 +125,15 @@ impl<N: Name + 'static> TermionBackend<N> {
                         self.size = size;
                         self.last_frame
                             .resize(height as usize, Line::blank(width as usize));
+                        app.handle_resize(size);
                     }
                     Event::Input(event) => {
+                        use ShouldPropagate::*;
+                        match app.handle_input(&event_ctx, &event) {
+                            Stop => break,
+                            Continue => {}
+                        };
                         for cb in ui.callbacks.get_iter(&focus) {
-                            use ShouldPropagate::*;
                             match cb(&event_ctx, &event) {
                                 Stop => break,
                                 Continue => continue,

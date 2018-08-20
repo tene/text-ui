@@ -17,7 +17,7 @@ pub mod widget;
 pub use backend::TermionBackend;
 pub use input::{InputEvent, MouseEvent};
 pub use widget::{
-    InputCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
+    App, InputCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
     WidgetEventContext, WidgetRenderContext,
 };
 
@@ -32,7 +32,7 @@ pub fn shared<T>(item: T) -> Shared<T> {
     Arc::new(RwLock::new(item))
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Size {
     pub cols: usize,
     pub rows: usize,

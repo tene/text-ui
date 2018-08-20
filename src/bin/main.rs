@@ -2,8 +2,9 @@ extern crate text_ui;
 use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
-    shared, widget::layout::Linear, widget::readline::ReadlineEvent, AppEvent, Color, InputEvent,
-    Line, RenderBackend, RenderElement, Shared, TermionBackend, Widget, WidgetRenderContext,
+    shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
+    InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget, WidgetEventContext,
+    WidgetRenderContext,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -13,14 +14,14 @@ enum MyNames {
 }
 
 #[derive(Debug)]
-struct App {
+struct DemoApp {
     pub log1: Shared<Log>,
     pub log2: Shared<Log>,
     pub rl1: Readline<MyNames>,
     pub rl2: Readline<MyNames>,
 }
 
-impl App {
+impl DemoApp {
     pub fn new() -> Self {
         let log1 = shared(Log::new(Some(Color::Red)));
         let log2 = shared(Log::new(Some(Color::LightGreen)));
@@ -44,7 +45,7 @@ impl App {
                 Err(_) => false,
             },
         }));
-        App {
+        Self {
             log1,
             log2,
             rl1,
@@ -53,38 +54,55 @@ impl App {
     }
 }
 
-impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for App {
+impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for DemoApp {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
-        use text_ui::ShouldPropagate::*;
         let vline = Line::vertical();
         let hline = Line::horizontal();
         let logs = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
         let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
-        ctx.render(&ui).add_input_handler(
-            None,
-            Box::new(move |ctx, e| match e {
-                InputEvent::Key(Key::Esc) => {
-                    ctx.send_event(AppEvent::Exit);
-                    Stop
-                }
-                InputEvent::Key(Key::Ctrl('a')) => {
-                    ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
-                    Stop
-                }
-                InputEvent::Key(Key::Ctrl('b')) => {
-                    ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
-                    Stop
-                }
-                _ => Continue,
-            }),
-        )
+        ctx.render(&ui)
+    }
+}
+
+impl<B: RenderBackend<MyNames>> App<B, MyNames> for DemoApp {
+    fn handle_input(
+        &mut self,
+        ctx: &WidgetEventContext<B, MyNames>,
+        event: &InputEvent,
+    ) -> text_ui::ShouldPropagate {
+        use text_ui::ShouldPropagate::*;
+        match event {
+            InputEvent::Key(Key::Esc) => {
+                ctx.send_event(AppEvent::Exit);
+                Stop
+            }
+            InputEvent::Key(Key::Ctrl('a')) => {
+                ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
+                Stop
+            }
+            InputEvent::Key(Key::Ctrl('b')) => {
+                ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
+                Stop
+            }
+            InputEvent::Mouse(m) => {
+                self.log2.write().unwrap().log_msg(&format!("{:?}", m));
+                Continue
+            }
+            _ => Continue,
+        }
+    }
+    fn handle_resize(&mut self, size: Size) {
+        self.log2
+            .write()
+            .unwrap()
+            .log_msg(&format!("Resized to: {:?}", size));
     }
 }
 
 fn main() {
-    let app = App::new();
+    let mut app = DemoApp::new();
     app.log1.write().unwrap().log_msg("Ctrl+A here");
     app.log2.write().unwrap().log_msg("Ctrl+B here");
     let mut be = TermionBackend::new();
-    be.run(&app, MyNames::Input1);
+    be.run(&mut app, MyNames::Input1);
 }

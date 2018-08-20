@@ -102,3 +102,18 @@ where
         self.read().unwrap().growth_policy()
     }
 }
+
+pub trait App<B, N>: Widget<B, N>
+where
+    B: RenderBackend<N>,
+    N: Name,
+{
+    fn handle_input(
+        &mut self,
+        _ctx: &WidgetEventContext<B, N>,
+        _event: &InputEvent,
+    ) -> ShouldPropagate {
+        ShouldPropagate::Continue
+    }
+    fn handle_resize(&mut self, Size) {}
+}
