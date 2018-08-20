@@ -17,7 +17,7 @@ pub mod widget;
 pub use backend::TermionBackend;
 pub use input::{InputEvent, MouseEvent};
 pub use widget::{
-    App, InputCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
+    App, KeyCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
     WidgetEventContext, WidgetRenderContext,
 };
 

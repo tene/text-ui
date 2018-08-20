@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, FullGrowthPolicy, InputEvent, Name, Pos, RenderBackend, RenderElement, Shared,
-    ShouldPropagate, Widget, WidgetRenderContext,
+    shared, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Shared, ShouldPropagate,
+    Widget, WidgetRenderContext,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -47,19 +47,19 @@ where
         let event = ReadlineEvent::Submitted { name, line };
         self.listeners.retain(|l| l(&event));
     }
-    pub fn handle_input(&mut self, event: &InputEvent) -> ShouldPropagate {
+    pub fn handle_key(&mut self, key: Key) -> ShouldPropagate {
         use ShouldPropagate::*;
-        match event {
-            InputEvent::Key(Key::Char('\n')) => {
+        match key {
+            Key::Char('\n') => {
                 self.submit();
                 Stop
             }
-            InputEvent::Key(Key::Char(ch)) => {
-                self.line.insert(self.index, *ch);
+            Key::Char(ch) => {
+                self.line.insert(self.index, ch);
                 self.index += 1;
                 Stop
             }
-            InputEvent::Key(Key::Esc) => Continue,
+            Key::Esc => Continue,
             _ => Continue,
         }
     }
@@ -119,9 +119,9 @@ where
         let line = inner.read().unwrap().line.to_string();
         let index = inner.read().unwrap().index;
         ctx.line(&line)
-            .add_input_handler(
+            .add_key_input_handler(
                 Some(name),
-                Box::new(move |_ctx, e| inner.write().unwrap().handle_input(e)),
+                Box::new(move |_ctx, k| inner.write().unwrap().handle_key(k)),
             ).add_cursor(name, Pos::new(index, 0))
     }
     fn growth_policy(&self) -> FullGrowthPolicy {

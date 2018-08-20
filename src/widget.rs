@@ -1,4 +1,4 @@
-use input::InputEvent;
+use input::{InputEvent, Key};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -25,7 +25,7 @@ pub enum ShouldPropagate {
     Stop,
 }
 
-pub type InputCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, &InputEvent) -> ShouldPropagate>;
+pub type KeyCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, Key) -> ShouldPropagate>;
 
 pub trait WidgetRenderContext<B, N>
 where
@@ -54,7 +54,7 @@ where
     B: RenderBackend<N>,
 {
     fn size(&self) -> Size;
-    fn add_input_handler(self, name: Option<N>, callback: InputCallback<B, N>) -> Self;
+    fn add_key_input_handler(self, name: Option<N>, callback: KeyCallback<B, N>) -> Self;
     fn add_cursor(self, name: N, pos: Pos) -> Self;
     fn get_cursor(&self, name: &N) -> Option<Pos>;
     fn vconcat(self, other: Self) -> Self;

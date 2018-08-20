@@ -6,7 +6,7 @@ use termion::color as termion_color;
 use termion::color::Color as TermColor;
 use unicode_segmentation::UnicodeSegmentation;
 
-use {Color, Fragment, InputCallback, Name, Pos, RenderBound, RenderElement, Size};
+use {Color, Fragment, KeyCallback, Name, Pos, RenderBound, RenderElement, Size};
 
 use super::TermionBackend;
 
@@ -150,7 +150,7 @@ pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<N, InputCallback<TermionBackend<N>, N>>,
+    pub callbacks: IndexTree<N, KeyCallback<TermionBackend<N>, N>>,
     pub cursors: HashMap<N, Pos>,
 }
 
@@ -158,10 +158,10 @@ impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
     fn size(&self) -> Size {
         Size::new(self.width, self.height)
     }
-    fn add_input_handler(
+    fn add_key_input_handler(
         mut self,
         name: Option<N>,
-        callback: InputCallback<TermionBackend<N>, N>,
+        callback: KeyCallback<TermionBackend<N>, N>,
     ) -> Self {
         self.callbacks.push(name, callback);
         self

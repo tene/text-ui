@@ -1,8 +1,5 @@
-use input::{MouseButton, MouseEvent};
-use {
-    shared, Color, Fragment, InputEvent, Name, RenderBackend, RenderElement, Shared, Widget,
-    WidgetRenderContext,
-};
+//use input::{MouseButton, MouseEvent};
+use {shared, Color, Fragment, Name, RenderBackend, Shared, Widget, WidgetRenderContext};
 
 #[derive(Debug, Default)]
 pub struct Log {
@@ -35,10 +32,10 @@ where
     N: Name,
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
-        let scroll_pos = self.scroll_pos.clone();
+        //let scroll_pos = self.scroll_pos.clone();
         let mut frag: Fragment = self.lines.clone().into();
         frag.fg = self.fg;
-        ctx.text(frag).add_input_handler(
+        ctx.text(frag) /*.add_key_input_handler(
             None,
             Box::new(move |_ctx, e| {
                 use ShouldPropagate::*;
@@ -57,6 +54,6 @@ where
                     _ => Continue,
                 }
             }),
-        )
+        )*/
     }
 }
