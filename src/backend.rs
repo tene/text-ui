@@ -134,15 +134,8 @@ impl<N: Name + 'static> TermionBackend<N> {
                             Continue => {}
                         };
                         match event {
-                            InputEvent::Key(k) => {
-                                for cb in ui.callbacks.get_iter(&focus) {
-                                    match cb(&event_ctx, k) {
-                                        Stop => break,
-                                        Continue => continue,
-                                    }
-                                }
-                            }
-                            InputEvent::Mouse(_) => {}
+                            InputEvent::Key(k) => ui.handle_key(&event_ctx, &focus, k),
+                            InputEvent::Mouse(m) => ui.handle_mouse(&event_ctx, m),
                             InputEvent::Unsupported(_) => {}
                         }
                     }

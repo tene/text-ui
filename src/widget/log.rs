@@ -35,7 +35,7 @@ where
         //let scroll_pos = self.scroll_pos.clone();
         let mut frag: Fragment = self.lines.clone().into();
         frag.fg = self.fg;
-        ctx.text(frag) /*.add_key_input_handler(
+        ctx.text(frag) /*.add_key_handler(
             None,
             Box::new(move |_ctx, e| {
                 use ShouldPropagate::*;

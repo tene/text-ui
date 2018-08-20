@@ -1,4 +1,4 @@
-use input::{InputEvent, Key};
+use input::{InputEvent, Key, MouseEvent};
 use std::fmt::Debug;
 use std::hash::Hash;
 
@@ -26,6 +26,9 @@ pub enum ShouldPropagate {
 }
 
 pub type KeyCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, Key) -> ShouldPropagate>;
+// XXX TODO need to use internal mouse event type instead of termion's
+pub type MouseCallback<B, N> =
+    Box<Fn(&WidgetEventContext<B, N>, Pos, MouseEvent) -> ShouldPropagate>;
 
 pub trait WidgetRenderContext<B, N>
 where
@@ -54,7 +57,8 @@ where
     B: RenderBackend<N>,
 {
     fn size(&self) -> Size;
-    fn add_key_input_handler(self, name: Option<N>, callback: KeyCallback<B, N>) -> Self;
+    fn add_key_handler(self, name: Option<N>, callback: KeyCallback<B, N>) -> Self;
+    fn add_mouse_handler(self, name: Option<N>, callback: MouseCallback<B, N>) -> Self;
     fn add_cursor(self, name: N, pos: Pos) -> Self;
     fn get_cursor(&self, name: &N) -> Option<Pos>;
     fn vconcat(self, other: Self) -> Self;

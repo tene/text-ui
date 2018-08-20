@@ -1,5 +1,6 @@
 #![feature(rust_2018_preview)]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
+#![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
 
 extern crate libc;
 extern crate signal_hook;
@@ -15,10 +16,10 @@ pub mod input;
 pub mod widget;
 
 pub use backend::TermionBackend;
-pub use input::{InputEvent, MouseEvent};
+pub use input::{InputEvent, Key, MouseEvent};
 pub use widget::{
-    App, KeyCallback, Line, Linear, Name, RenderBackend, RenderElement, ShouldPropagate, Widget,
-    WidgetEventContext, WidgetRenderContext,
+    App, KeyCallback, Line, Linear, MouseCallback, Name, RenderBackend, RenderElement,
+    ShouldPropagate, Widget, WidgetEventContext, WidgetRenderContext,
 };
 
 #[derive(Debug, PartialEq)]
@@ -126,6 +127,16 @@ impl ops::Add for Pos {
     fn add(self, other: Self) -> Self::Output {
         let col = self.col + other.col;
         let row = self.row + other.row;
+        Self { col, row }
+    }
+}
+
+impl ops::Sub for Pos {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        let col = self.col - other.col;
+        let row = self.row - other.row;
         Self { col, row }
     }
 }

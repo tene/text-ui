@@ -63,6 +63,9 @@ where
             _ => Continue,
         }
     }
+    pub fn set_index(&mut self, new_idx: usize) {
+        self.index = std::cmp::min(new_idx, self.line.len());
+    }
 }
 
 impl<N> fmt::Debug for ReadlineInner<N>
@@ -115,13 +118,20 @@ where
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let inner = self.inner.clone();
+        let inner2 = inner.clone();
         let name = inner.read().unwrap().name;
         let line = inner.read().unwrap().line.to_string();
         let index = inner.read().unwrap().index;
         ctx.line(&line)
-            .add_key_input_handler(
+            .add_key_handler(
                 Some(name),
                 Box::new(move |_ctx, k| inner.write().unwrap().handle_key(k)),
+            ).add_mouse_handler(
+                Some(name),
+                Box::new(move |_ctx, pos, _m| {
+                    inner2.write().unwrap().set_index(pos.col);
+                    ShouldPropagate::Stop
+                }),
             ).add_cursor(name, Pos::new(index, 0))
     }
     fn growth_policy(&self) -> FullGrowthPolicy {

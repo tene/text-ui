@@ -6,9 +6,12 @@ use termion::color as termion_color;
 use termion::color::Color as TermColor;
 use unicode_segmentation::UnicodeSegmentation;
 
-use {Color, Fragment, KeyCallback, Name, Pos, RenderBound, RenderElement, Size};
+use {
+    Color, Fragment, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound,
+    RenderElement, Size,
+};
 
-use super::TermionBackend;
+use super::{TermionBackend, TermionEventContext};
 
 // This is redundant because termion colors are not sized, and I didn't want to add a box everywhere
 impl TermColor for &Color {
@@ -150,20 +153,39 @@ pub struct Block<N: Name> {
     pub lines: Vec<Line>,
     pub width: usize,
     pub height: usize,
-    pub callbacks: IndexTree<N, KeyCallback<TermionBackend<N>, N>>,
-    pub cursors: HashMap<N, Pos>,
+    key_callbacks: IndexTree<N, KeyCallback<TermionBackend<N>, N>>,
+    cursors: HashMap<N, Pos>,
+    hit_map: Vec<Vec<Option<usize>>>,
+    mouse_callbacks: IndexTree<usize, (Option<N>, Pos, MouseCallback<TermionBackend<N>, N>)>,
 }
 
 impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
     fn size(&self) -> Size {
         Size::new(self.width, self.height)
     }
-    fn add_key_input_handler(
+    fn add_key_handler(
         mut self,
         name: Option<N>,
         callback: KeyCallback<TermionBackend<N>, N>,
     ) -> Self {
-        self.callbacks.push(name, callback);
+        self.key_callbacks.push(name, callback);
+        self
+    }
+    fn add_mouse_handler(
+        mut self,
+        name: Option<N>,
+        callback: MouseCallback<TermionBackend<N>, N>,
+    ) -> Self {
+        let idx = self
+            .mouse_callbacks
+            .push(None, (name, Pos::new(0, 0), callback));
+        for row in &mut self.hit_map {
+            for cell in row {
+                if cell.is_none() {
+                    *cell = Some(idx);
+                }
+            }
+        }
         self
     }
     fn add_cursor(mut self, name: N, pos: Pos) -> Self {
@@ -176,25 +198,59 @@ impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
     // Maybe factor out the common parts of these?
     fn vconcat(mut self, mut other: Self) -> Self {
         assert_eq!(self.width, other.width); // XXX TODO Maybe expand the smaller to fit?
+        let pos_offset = Pos::new(0, self.height);
         self.lines.append(&mut other.lines);
-        // map callback position
-        self.callbacks.append(&mut other.callbacks);
-        let offset = Pos::new(0, self.height);
-        self.cursors
-            .extend(other.cursors.into_iter().map(move |(n, p)| (n, p + offset)));
+
+        self.key_callbacks.append(&mut other.key_callbacks);
+
+        let mut offset_mouse_callbacks = other
+            .mouse_callbacks
+            .map(|(name, pos, cb)| (name, pos + pos_offset, cb));
+        let idx_offset = self.mouse_callbacks.append(&mut offset_mouse_callbacks);
+        for row in &mut other.hit_map {
+            for cell in row {
+                *cell = cell.map(|i| i + idx_offset);
+            }
+        }
+        self.hit_map.append(&mut other.hit_map);
+
+        self.cursors.extend(
+            other
+                .cursors
+                .into_iter()
+                .map(move |(n, p)| (n, p + pos_offset)),
+        );
         self.height += other.height;
         self
     }
     fn hconcat(mut self, mut other: Self) -> Self {
         assert_eq!(self.height, other.height); // XXX TODO Maybe expand the smaller to fit?
+        let pos_offset = Pos::new(self.height, 0);
         for (mut a, b) in self.lines.iter_mut().zip(other.lines.into_iter()) {
             a.hconcat(b);
         }
-        // map callback position
-        self.callbacks.append(&mut other.callbacks);
-        let offset = Pos::new(self.height, 0);
-        self.cursors
-            .extend(other.cursors.into_iter().map(move |(n, p)| (n, p + offset)));
+        self.key_callbacks.append(&mut other.key_callbacks);
+
+        let mut offset_mouse_callbacks = other
+            .mouse_callbacks
+            .map(|(name, pos, cb)| (name, pos + pos_offset, cb));
+        let idx_offset = self.mouse_callbacks.append(&mut offset_mouse_callbacks);
+        for row in &mut other.hit_map {
+            for cell in row {
+                *cell = cell.map(|i| i + idx_offset);
+            }
+        }
+
+        for (mut a, b) in self.hit_map.iter_mut().zip(other.hit_map.into_iter()) {
+            a.extend_from_slice(&b)
+        }
+
+        self.cursors.extend(
+            other
+                .cursors
+                .into_iter()
+                .map(move |(n, p)| (n, p + pos_offset)),
+        );
         self.width += other.width;
         self
     }
@@ -203,9 +259,16 @@ impl<N: Name> RenderElement<TermionBackend<N>, N> for Block<N> {
 impl<N: Name> Block<N> {
     pub fn new(lines: Vec<Line>, width: usize, height: usize) -> Self {
         assert_eq!(lines.len(), height);
+        let mut empty_line = Vec::new();
+        // https://github.com/rust-lang/rust/issues/41758
+        empty_line.resize(width, None);
+        let mut hit_map = Vec::new();
+        hit_map.resize(height, empty_line);
         Block {
-            callbacks: IndexTree::new(),
+            key_callbacks: IndexTree::new(),
             cursors: HashMap::new(),
+            hit_map,
+            mouse_callbacks: IndexTree::new(),
             lines,
             width,
             height,
@@ -230,6 +293,33 @@ impl<N: Name> Block<N> {
         };
         let height = lines.len();
         Block::new(lines, width, height)
+    }
+    pub fn handle_key(&self, event_ctx: &TermionEventContext<N>, focus: &N, key: Key) {
+        use ShouldPropagate::*;
+        for cb in self.key_callbacks.get_iter(focus) {
+            match cb(event_ctx, key) {
+                Stop => break,
+                Continue => continue,
+            }
+        }
+    }
+    // XXX TODO Need to use internal mouse event type instead of termion's, with relative coords
+    pub fn handle_mouse(&self, event_ctx: &TermionEventContext<N>, mevent: MouseEvent) {
+        use ShouldPropagate::*;
+        let (x, y) = match mevent {
+            MouseEvent::Press(_, x, y) => (x as usize - 1, y as usize - 1),
+            MouseEvent::Release(x, y) => (x as usize - 1, y as usize - 1),
+            MouseEvent::Hold(x, y) => (x as usize - 1, y as usize - 1),
+        };
+        if let Some(idx) = self.hit_map[y][x] {
+            let frame_pos = Pos::new(x, y);
+            for (_name, pos, cb) in self.mouse_callbacks.get_iter_idx(idx) {
+                match cb(event_ctx, frame_pos - *pos, mevent) {
+                    Stop => break,
+                    Continue => continue,
+                }
+            }
+        }
     }
 }
 

@@ -28,7 +28,7 @@ where
         }
     }
 
-    pub fn push(&mut self, name: Option<N>, item: I) {
+    pub fn push(&mut self, name: Option<N>, item: I) -> usize {
         self.items.push(item);
         self.parents.push(None);
         let idx = self.items.len() - 1;
@@ -39,9 +39,10 @@ where
             self.parents[i] = Some(idx);
         }
         self.roots.insert(idx);
+        idx
     }
 
-    pub fn append(&mut self, other: &mut Self) {
+    pub fn append(&mut self, other: &mut Self) -> usize {
         let offset = self.items.len();
         self.items.extend(other.items.drain(..));
         self.roots.extend(other.roots.drain().map(|r| r + offset));
@@ -49,6 +50,7 @@ where
             .extend(other.named.drain().map(|(k, v)| (k, v + offset))); // Need to handle name collisions
         self.parents
             .extend(other.parents.drain(..).map(|p| p.map(|i| i + offset)));
+        offset
     }
 
     pub fn map<X>(self, f: impl FnMut(I) -> X) -> IndexTree<N, X> {
@@ -65,8 +67,15 @@ where
         }
     }
 
-    pub fn get(&self, name: &N) -> Option<(Option<usize>, &I)> {
+    pub fn _get(&self, name: &N) -> Option<(Option<usize>, &I)> {
         let idx = *(self.named.get(name)?);
+        Some((self.parents[idx], &self.items[idx]))
+    }
+
+    pub fn _get_idx(&self, idx: usize) -> Option<(Option<usize>, &I)> {
+        if idx >= self.items.len() {
+            return None;
+        }
         Some((self.parents[idx], &self.items[idx]))
     }
 
@@ -75,6 +84,19 @@ where
             items: &self.items,
             parents: &self.parents,
             idx: self.named.get(name).cloned(),
+        }
+    }
+
+    pub fn get_iter_idx(&self, idx: usize) -> TreeIter<I> {
+        let idx = if idx >= self.items.len() {
+            None
+        } else {
+            Some(idx)
+        };
+        TreeIter {
+            items: &self.items,
+            parents: &self.parents,
+            idx,
         }
     }
 }
