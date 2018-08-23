@@ -2,15 +2,19 @@
 use {shared, Color, Fragment, Name, RenderBackend, Shared, Widget, WidgetRenderContext};
 
 #[derive(Debug, Default)]
-pub struct Log {
+pub struct Log<N: Name> {
     pub lines: Vec<String>,
     pub scroll_pos: Shared<usize>,
     pub selected: Option<usize>,
+    pub name: Option<N>,
     pub fg: Option<Color>,
 }
 
-impl Log {
-    pub fn new(fg: Option<Color>) -> Self {
+impl<N> Log<N>
+where
+    N: Name,
+{
+    pub fn new(name: Option<N>, fg: Option<Color>) -> Self {
         let lines = vec![];
         let scroll_pos = shared(0);
         let selected = None;
@@ -19,6 +23,7 @@ impl Log {
             scroll_pos,
             selected,
             fg,
+            name,
         }
     }
     pub fn log_msg(&mut self, msg: &str) {
@@ -26,7 +31,7 @@ impl Log {
     }
 }
 
-impl<B, N> Widget<B, N> for Log
+impl<B, N> Widget<B, N> for Log<N>
 where
     B: RenderBackend<N>,
     N: Name,

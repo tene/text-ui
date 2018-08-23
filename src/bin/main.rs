@@ -3,28 +3,30 @@ use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
     shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
-    InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget, WidgetEventContext,
-    WidgetRenderContext,
+    ContentID, InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget,
+    WidgetEventContext, WidgetRenderContext,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
 enum MyNames {
+    Log1,
+    Log2,
     Input1,
     Input2,
 }
 
 #[derive(Debug)]
 struct DemoApp {
-    pub log1: Shared<Log>,
-    pub log2: Shared<Log>,
+    pub log1: Shared<Log<MyNames>>,
+    pub log2: Shared<Log<MyNames>>,
     pub rl1: Readline<MyNames>,
     pub rl2: Readline<MyNames>,
 }
 
 impl DemoApp {
     pub fn new() -> Self {
-        let log1 = shared(Log::new(Some(Color::Red)));
-        let log2 = shared(Log::new(Some(Color::LightGreen)));
+        let log1 = shared(Log::new(Some(MyNames::Log1), Some(Color::Red)));
+        let log2 = shared(Log::new(Some(MyNames::Log2), Some(Color::LightGreen)));
         let logref1 = log1.clone();
         let logref2 = log2.clone();
         let rl1 = Readline::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
@@ -96,6 +98,13 @@ impl<B: RenderBackend<MyNames>> App<B, MyNames> for DemoApp {
             .write()
             .unwrap()
             .log_msg(&format!("Resized to: {:?}", size));
+    }
+    fn style(&self, cid: ContentID<MyNames>) -> (Option<Color>, Option<Color>) {
+        match cid.as_tuple() {
+            (Some(MyNames::Log1), ..) => (Some(Color::Red), None),
+            (Some(MyNames::Log2), ..) => (Some(Color::LightGreen), None),
+            (_, _, _) => (None, None),
+        }
     }
 }
 

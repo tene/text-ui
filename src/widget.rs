@@ -14,7 +14,7 @@ pub use self::line::Line;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {Direction, Fragment, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
+use {Color, ContentID, Direction, Fragment, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -120,4 +120,5 @@ where
         ShouldPropagate::Continue
     }
     fn handle_resize(&mut self, Size) {}
+    fn style(&self, ContentID<N>) -> (Option<Color>, Option<Color>);
 }

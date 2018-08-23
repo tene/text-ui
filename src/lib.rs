@@ -264,3 +264,24 @@ impl From<Vec<String>> for Fragment {
         Fragment::new(None, None, text.join("\n"))
     }
 }
+
+// XXX TODO Better name??
+#[derive(Debug, Clone, Copy)]
+pub struct ContentID<N: Name> {
+    pub name: Option<N>,
+    pub widget: &'static str,
+    pub class: Option<&'static str>,
+}
+
+impl<N> ContentID<N>
+where
+    N: Name,
+{
+    pub fn as_tuple(self) -> (Option<N>, &'static str, Option<&'static str>) {
+        (self.name, self.widget, self.class)
+    }
+}
+
+pub struct Text<N: Name> {
+    pub texts: Vec<(ContentID<N>, String)>,
+}
