@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Shared, ShouldPropagate,
-    Widget, WidgetRenderContext,
+    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Shared,
+    ShouldPropagate, Widget, WidgetRenderContext,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -128,7 +128,8 @@ where
                 Box::new(move |_ctx, k| inner.write().unwrap().handle_key(k)),
             ).add_mouse_handler(
                 Some(name),
-                Box::new(move |_ctx, pos, _m| {
+                Box::new(move |ctx, pos, _m| {
+                    ctx.send_event(AppEvent::SetFocus(name));
                     inner2.write().unwrap().set_index(pos.col);
                     ShouldPropagate::Stop
                 }),
