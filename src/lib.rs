@@ -229,59 +229,76 @@ pub enum Color {
     Reset,
 }
 
-pub struct Fragment {
-    pub fg: Option<Color>,
-    pub bg: Option<Color>,
-    pub text: String,
-}
-
-impl Fragment {
-    pub fn new(fg: Option<Color>, bg: Option<Color>, text: String) -> Self {
-        Self { fg, bg, text }
-    }
-}
-
-impl From<String> for Fragment {
-    fn from(text: String) -> Fragment {
-        Fragment::new(None, None, text)
-    }
-}
-
-impl From<&str> for Fragment {
-    fn from(text: &str) -> Fragment {
-        Fragment::new(None, None, text.to_owned())
-    }
-}
-
-impl From<&String> for Fragment {
-    fn from(text: &String) -> Fragment {
-        Fragment::new(None, None, text.clone())
-    }
-}
-
-impl From<Vec<String>> for Fragment {
-    fn from(text: Vec<String>) -> Fragment {
-        Fragment::new(None, None, text.join("\n"))
-    }
-}
-
 // XXX TODO Better name??
 #[derive(Debug, Clone, Copy)]
 pub struct ContentID<N: Name> {
     pub name: Option<N>,
     pub widget: &'static str,
-    pub class: Option<&'static str>,
+    pub class: &'static str,
 }
 
-impl<N> ContentID<N>
-where
-    N: Name,
-{
-    pub fn as_tuple(self) -> (Option<N>, &'static str, Option<&'static str>) {
+impl<N: Name> ContentID<N> {
+    pub fn as_tuple(self) -> (Option<N>, &'static str, &'static str) {
         (self.name, self.widget, self.class)
+    }
+    pub fn new(name: Option<N>, widget: &'static str, class: &'static str) -> Self {
+        Self {
+            name,
+            widget,
+            class,
+        }
     }
 }
 
+pub struct Segment<N: Name> {
+    pub id: ContentID<N>,
+    pub text: String,
+}
+
+impl<N: Name> Segment<N> {
+    pub fn new(name: Option<N>, widget: &'static str, class: &'static str, text: String) -> Self {
+        let id = ContentID::new(name, widget, class);
+        Self { id, text }
+    }
+    pub fn new_id(id: ContentID<N>, text: String) -> Self {
+        Self { id, text }
+    }
+}
+
+pub struct TextLine<N: Name> {
+    pub segments: Vec<Segment<N>>,
+}
+
 pub struct Text<N: Name> {
-    pub texts: Vec<(ContentID<N>, String)>,
+    pub lines: Vec<TextLine<N>>,
+}
+
+impl<N: Name> Text<N> {
+    pub fn new_lines(
+        name: Option<N>,
+        widget: &'static str,
+        class: &'static str,
+        lines: Vec<String>,
+    ) -> Self {
+        let id = ContentID::new(name, widget, class);
+        let lines: Vec<TextLine<N>> = lines
+            .into_iter()
+            .map(|l| Segment::new_id(id, l).into())
+            .collect();
+        Self { lines }
+    }
+}
+
+impl<N: Name> From<Segment<N>> for TextLine<N> {
+    fn from(segment: Segment<N>) -> Self {
+        let segments = vec![segment];
+        Self { segments }
+    }
+}
+
+impl<N: Name> From<TextLine<N>> for Text<N> {
+    fn from(line: TextLine<N>) -> Self {
+        let lines = vec![line];
+        Self { lines }
+    }
 }

@@ -13,8 +13,8 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    App, AppEvent, Fragment, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size,
-    Widget, WidgetEventContext, WidgetRenderContext,
+    App, AppEvent, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Text,
+    TextLine, Widget, WidgetEventContext, WidgetRenderContext,
 };
 
 mod element;
@@ -108,7 +108,7 @@ impl<N: Name + 'static> TermionBackend<N> {
         write!(self.screen, "{}", termion::clear::All).unwrap();
         'outer: loop {
             let render_ctx = TermionRenderContext::new(self.size.into());
-            let ui: Block<N> = render_ctx.render(app);
+            let ui: Block<N> = app.render(render_ctx);
             self.paint_image(&ui, &focus);
             {
                 // LOL wait until an event before doing anything this is a dumb hack
@@ -173,14 +173,11 @@ impl TermionRenderContext {
 }
 
 impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext {
-    fn render(&self, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
-        widget.render(self.clone())
-    }
     fn with_bound(&self, bound: RenderBound) -> Self {
         Self::new(bound)
     }
     fn render_sized(&self, bound: RenderBound, widget: &Widget<TermionBackend<N>, N>) -> Block<N> {
-        let block = Self::new(bound).render(widget);
+        let block = widget.render(Self::new(bound));
         let size = block.size();
         if let Some(width) = bound.width {
             //assert_eq!(width, size.cols);
@@ -206,13 +203,22 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
         self.bound
     }
 
-    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
+    /*    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
         Block::from_fragment(&fragment, self.bound.constrain_height(1))
     }
     fn text<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
         Block::from_fragment(&fragment, self.bound)
+    }*/
+    fn clip_line<L: Into<TextLine<N>>>(&self, line: L) -> Block<N> {
+        unimplemented!();
+    }
+    fn wrap_line<L: Into<TextLine<N>>>(&self, line: L) -> Block<N> {
+        unimplemented!();
+    }
+    fn text<T: Into<Text<N>>>(&self, text: T) -> Block<N> {
+        unimplemented!();
     }
 }
 

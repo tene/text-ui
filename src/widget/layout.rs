@@ -33,6 +33,10 @@ where
     B: 'a + RenderBackend<N>,
     N: 'a + Name,
 {
+    fn name(&self) -> Option<N> {
+        None
+    }
+
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let dir = self.direction;
         // Clippy complains about a complex type here; I'm not convinced it's an improvement.

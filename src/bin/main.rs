@@ -4,7 +4,7 @@ use text_ui::widget::{Log, Readline};
 use text_ui::{
     shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
     ContentID, InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget,
-    WidgetEventContext, WidgetRenderContext,
+    WidgetEventContext,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -57,12 +57,15 @@ impl DemoApp {
 }
 
 impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for DemoApp {
+    fn name(&self) -> Option<MyNames> {
+        None
+    }
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let vline = Line::vertical();
         let hline = Line::horizontal();
-        let logs = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
+        let logs: Linear<B, MyNames> = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
         let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
-        ctx.render(&ui)
+        ui.render(ctx)
     }
 }
 

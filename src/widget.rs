@@ -14,7 +14,9 @@ pub use self::line::Line;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {Color, ContentID, Direction, Fragment, FullGrowthPolicy, Pos, RenderBound, Shared, Size};
+use {
+    Color, ContentID, Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size, Text, TextLine,
+};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -36,11 +38,12 @@ where
     N: Name,
 {
     fn bound(&self) -> RenderBound;
-    fn render(&self, widget: &Widget<B, N>) -> B::Element;
+    //fn render(&self, widget: &Widget<B, N>) -> B::Element;
     fn with_bound(&self, bound: RenderBound) -> Self;
     fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
-    fn line<F: Into<Fragment>>(&self, F) -> B::Element;
-    fn text<F: Into<Fragment>>(&self, F) -> B::Element;
+    fn clip_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
+    fn wrap_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
+    fn text<T: Into<Text<N>>>(&self, T) -> B::Element;
 }
 
 pub trait WidgetEventContext<B, N>
@@ -84,6 +87,8 @@ where
 {
     fn render(&self, B::RenderContext) -> B::Element;
 
+    fn name(&self) -> Option<N>;
+
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::default()
     }
@@ -96,7 +101,7 @@ where
     N: Name,
 {
     fn render(&self, ctx: B::RenderContext) -> B::Element {
-        ctx.render(&*self.read().unwrap())
+        self.read().unwrap().render(ctx)
     }
 
     // XXX TODO need to replace growth_policy with fn get_bounds(&self, bounds: Bounds) -> Bounds
@@ -104,6 +109,10 @@ where
     // This is needed for layout, to propagate back up minimum sizes from children
     fn growth_policy(&self) -> FullGrowthPolicy {
         self.read().unwrap().growth_policy()
+    }
+
+    fn name(&self) -> Option<N> {
+        self.read().unwrap().name()
     }
 }
 

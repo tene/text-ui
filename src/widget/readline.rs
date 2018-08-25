@@ -1,7 +1,7 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Shared,
+    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Segment, Shared,
     ShouldPropagate, Widget, WidgetRenderContext,
 };
 
@@ -116,13 +116,22 @@ where
     N: 'static + Name,
     B: RenderBackend<N>,
 {
+    fn name(&self) -> Option<N> {
+        Some(self.inner.read().unwrap().name)
+    }
     fn render(&self, ctx: B::RenderContext) -> B::Element {
         let inner = self.inner.clone();
         let inner2 = inner.clone();
         let name = inner.read().unwrap().name;
         let line = inner.read().unwrap().line.to_string();
         let index = inner.read().unwrap().index;
-        ctx.line(&line)
+        let seg = Segment::new(
+            Some(self.inner.read().unwrap().name),
+            "Input",
+            "Buffer",
+            line,
+        );
+        ctx.clip_line(seg)
             .add_key_handler(
                 Some(name),
                 Box::new(move |_ctx, k| inner.write().unwrap().handle_key(k)),

@@ -7,14 +7,14 @@ use termion::color::Color as TermColor;
 use unicode_segmentation::UnicodeSegmentation;
 
 use {
-    Color, Fragment, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound,
-    RenderElement, Size,
+    Color, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound, RenderElement,
+    Size, Text,
 };
 
 use super::{TermionBackend, TermionEventContext};
 
 // This is redundant because termion colors are not sized, and I didn't want to add a box everywhere
-impl TermColor for &Color {
+impl TermColor for Color {
     fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Color::LightBlack => termion_color::LightBlack.write_fg(f),
@@ -61,8 +61,8 @@ impl TermColor for &Color {
     }
 }
 
-fn termion_attr_fragment(frag: &Fragment) -> String {
-    match (&frag.fg, &frag.bg) {
+fn termion_attr_fragment(fg: Option<Color>, bg: Option<Color>) -> String {
+    match (fg, bg) {
         (Some(fg), Some(bg)) => format!("{}{}", termion_color::Fg(fg), termion_color::Bg(bg)),
         (Some(fg), None) => format!(
             "{}{}",
@@ -274,7 +274,7 @@ impl<N: Name> Block<N> {
             height,
         }
     }
-    pub fn from_fragment(frag: &Fragment, bound: RenderBound) -> Self {
+    /*pub fn from_textline(text: Text<N>, bound: RenderBound) -> Self {
         let attr = termion_attr_fragment(frag);
         let width = bound
             .width
@@ -293,7 +293,7 @@ impl<N: Name> Block<N> {
         };
         let height = lines.len();
         Block::new(lines, width, height)
-    }
+    }*/
     pub fn handle_key(&self, event_ctx: &TermionEventContext<N>, focus: &N, key: Key) {
         use ShouldPropagate::*;
         for cb in self.key_callbacks.get_iter(focus) {

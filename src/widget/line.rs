@@ -1,5 +1,7 @@
 use std::iter::repeat;
-use {Direction, FullGrowthPolicy, Name, RenderBackend, Widget, WidgetRenderContext};
+use {
+    Direction, FullGrowthPolicy, Name, RenderBackend, Segment, Text, Widget, WidgetRenderContext,
+};
 
 #[derive(Debug)]
 pub struct Line {
@@ -32,12 +34,18 @@ where
         let ctx = ctx.with_bound(ctx.bound().constrain_against(self.direction, 1));
         match self.direction {
             Direction::Horizontal => {
-                let line: String = repeat('─').take(count).collect();
-                ctx.line(&line)
+                let line = Segment::new(
+                    None,
+                    "Line",
+                    "Horizontal",
+                    repeat('─').take(count).collect::<String>(),
+                );
+                ctx.clip_line(line)
             }
             Direction::Vertical => {
                 let rows: Vec<String> = repeat("│".to_owned()).take(count).collect();
-                ctx.text(rows)
+                let text = Text::new_lines(None, "Line", "Vertical", rows);
+                ctx.text(text)
             }
         }
     }
@@ -46,5 +54,8 @@ where
             Direction::Horizontal => FullGrowthPolicy::fixed_height(),
             Direction::Vertical => FullGrowthPolicy::fixed_width(),
         }
+    }
+    fn name(&self) -> Option<N> {
+        None
     }
 }
