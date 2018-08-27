@@ -15,7 +15,8 @@ pub use self::log::Log;
 pub use self::readline::Readline;
 
 use {
-    Color, ContentID, Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size, Text, TextLine,
+    Color, ContentID, Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size, TextBlock,
+    TextLine,
 };
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
@@ -43,7 +44,7 @@ where
     fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
     fn clip_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
     fn wrap_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
-    fn text<T: Into<Text<N>>>(&self, T) -> B::Element;
+    fn text<T: Into<TextBlock<N>>>(&self, T) -> B::Element;
 }
 
 pub trait WidgetEventContext<B, N>

@@ -8,7 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use {
     Color, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound, RenderElement,
-    Size, Text,
+    Size, TextBlock,
 };
 
 use super::{TermionBackend, TermionEventContext};

@@ -13,7 +13,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
 use {
-    App, AppEvent, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, Text,
+    App, AppEvent, InputEvent, Name, RenderBackend, RenderBound, RenderElement, Size, TextBlock,
     TextLine, Widget, WidgetEventContext, WidgetRenderContext,
 };
 
@@ -217,7 +217,7 @@ impl<N: Name> WidgetRenderContext<TermionBackend<N>, N> for TermionRenderContext
     fn wrap_line<L: Into<TextLine<N>>>(&self, line: L) -> Block<N> {
         unimplemented!();
     }
-    fn text<T: Into<Text<N>>>(&self, text: T) -> Block<N> {
+    fn text<T: Into<TextBlock<N>>>(&self, text: T) -> Block<N> {
         unimplemented!();
     }
 }

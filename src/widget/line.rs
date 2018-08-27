@@ -1,6 +1,7 @@
 use std::iter::repeat;
 use {
-    Direction, FullGrowthPolicy, Name, RenderBackend, Segment, Text, Widget, WidgetRenderContext,
+    Direction, FullGrowthPolicy, Name, RenderBackend, Segment, TextBlock, Widget,
+    WidgetRenderContext,
 };
 
 #[derive(Debug)]
@@ -44,7 +45,7 @@ where
             }
             Direction::Vertical => {
                 let rows: Vec<String> = repeat("│".to_owned()).take(count).collect();
-                let text = Text::new_lines(None, "Line", "Vertical", rows);
+                let text = TextBlock::new_lines(None, "Line", "Vertical", rows);
                 ctx.text(text)
             }
         }
