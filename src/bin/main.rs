@@ -3,8 +3,7 @@ use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
     shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
-    ContentID, InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget,
-    WidgetEventContext,
+    ContentID, EventContext, InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -72,7 +71,7 @@ impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for DemoApp {
 impl<B: RenderBackend<MyNames>> App<B, MyNames> for DemoApp {
     fn handle_input(
         &mut self,
-        ctx: &WidgetEventContext<B, MyNames>,
+        ctx: &EventContext<B, MyNames>,
         event: &InputEvent,
     ) -> text_ui::ShouldPropagate {
         use text_ui::ShouldPropagate::*;

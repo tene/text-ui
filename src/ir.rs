@@ -1,8 +1,14 @@
+use std::collections::HashMap;
+use std::fmt;
 use std::iter::repeat;
 
 use unicode_segmentation::UnicodeSegmentation;
 
-use {Name, RenderBound, Size};
+use indextree::IndexTree;
+use {
+    Direction, EventContext, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound,
+    Size,
+};
 
 // XXX TODO Better name??
 #[derive(Debug, Clone, Copy)]
@@ -88,6 +94,10 @@ impl<N: Name> TextLine<N> {
         self.len += segment.len;
         self.segments.push(segment);
     }
+    pub fn hconcat(&mut self, mut other: Self) {
+        self.len += other.len;
+        self.segments.append(&mut other.segments);
+    }
 }
 
 impl<N: Name> From<Segment<N>> for TextLine<N> {
@@ -101,9 +111,57 @@ impl<N: Name> From<Segment<N>> for TextLine<N> {
 pub struct TextBlock<N: Name> {
     pub lines: Vec<TextLine<N>>,
     pub size: Size,
+    key_callbacks: IndexTree<N, KeyCallback<N>>,
+    cursors: HashMap<N, Pos>,
+    hit_map: Vec<Vec<Option<usize>>>,
+    mouse_callbacks: IndexTree<usize, (Option<N>, Pos, MouseCallback<N>)>,
 }
 
 impl<N: Name> TextBlock<N> {
+    pub fn new(lines: Vec<TextLine<N>>, width: usize, height: usize) -> Self {
+        assert_eq!(lines.len(), height);
+        let mut empty_line = Vec::new();
+        // https://github.com/rust-lang/rust/issues/41758
+        empty_line.resize(width, None);
+        let mut hit_map = Vec::new();
+        hit_map.resize(height, empty_line);
+        let size = Size::new(width, height);
+        Self {
+            key_callbacks: IndexTree::new(),
+            cursors: HashMap::new(),
+            hit_map,
+            mouse_callbacks: IndexTree::new(),
+            lines,
+            size,
+        }
+    }
+    pub fn handle_key(&self, event_ctx: &EventContext<N>, focus: &N, key: Key) {
+        use ShouldPropagate::*;
+        for cb in self.key_callbacks.get_iter(focus) {
+            match cb(event_ctx, key) {
+                Stop => break,
+                Continue => continue,
+            }
+        }
+    }
+    // XXX TODO Need to use internal mouse event type instead of termion's, with relative coords
+    pub fn handle_mouse(&self, event_ctx: &EventContext<N>, mevent: MouseEvent) {
+        use ShouldPropagate::*;
+        let (x, y) = match mevent {
+            MouseEvent::Press(_, x, y) => (x as usize - 1, y as usize - 1),
+            MouseEvent::Release(x, y) => (x as usize - 1, y as usize - 1),
+            MouseEvent::Hold(x, y) => (x as usize - 1, y as usize - 1),
+        };
+        if let Some(idx) = self.hit_map[y][x] {
+            let frame_pos = Pos::new(x, y);
+            for (_name, pos, cb) in self.mouse_callbacks.get_iter_idx(idx) {
+                match cb(event_ctx, frame_pos - *pos, mevent) {
+                    Stop => break,
+                    Continue => continue,
+                }
+            }
+        }
+    }
     pub fn clip_lines(
         name: Option<N>,
         widget: &'static str,
@@ -127,7 +185,113 @@ impl<N: Name> TextBlock<N> {
                 .collect(),
             None => tl_iter.collect(),
         };
-        let size = Size::new(width, lines.len());
-        Self { lines, size }
+        Self::new(lines, width, lines.len())
+    }
+    pub fn size(&self) -> Size {
+        self.size
+    }
+    pub fn add_key_handler(mut self, name: Option<N>, callback: KeyCallback<N>) -> Self {
+        self.key_callbacks.push(name, callback);
+        self
+    }
+    pub fn add_mouse_handler(mut self, name: Option<N>, callback: MouseCallback<N>) -> Self {
+        let idx = self
+            .mouse_callbacks
+            .push(None, (name, Pos::new(0, 0), callback));
+        for row in &mut self.hit_map {
+            for cell in row {
+                if cell.is_none() {
+                    *cell = Some(idx);
+                }
+            }
+        }
+        self
+    }
+    pub fn add_cursor(mut self, name: N, pos: Pos) -> Self {
+        self.cursors.insert(name, pos);
+        self
+    }
+    pub fn get_cursor(&self, name: &N) -> Option<Pos> {
+        self.cursors.get(name).cloned()
+    }
+    // Maybe factor out the common parts of these?
+    pub fn vconcat(mut self, mut other: Self) -> Self {
+        assert_eq!(self.size.cols, other.size.cols); // XXX TODO Maybe expand the smaller to fit?
+        let pos_offset = Pos::new(0, self.size.rows);
+        self.lines.append(&mut other.lines);
+
+        self.key_callbacks.append(&mut other.key_callbacks);
+
+        let mut offset_mouse_callbacks = other
+            .mouse_callbacks
+            .map(|(name, pos, cb)| (name, pos + pos_offset, cb));
+        let idx_offset = self.mouse_callbacks.append(&mut offset_mouse_callbacks);
+        for row in &mut other.hit_map {
+            for cell in row {
+                *cell = cell.map(|i| i + idx_offset);
+            }
+        }
+        self.hit_map.append(&mut other.hit_map);
+
+        self.cursors.extend(
+            other
+                .cursors
+                .into_iter()
+                .map(move |(n, p)| (n, p + pos_offset)),
+        );
+        self.size.rows += other.size.rows;
+        self
+    }
+    pub fn hconcat(mut self, mut other: Self) -> Self {
+        assert_eq!(self.size.rows, other.size.rows); // XXX TODO Maybe expand the smaller to fit?
+        let pos_offset = Pos::new(self.size.rows, 0);
+        for (mut a, b) in self.lines.iter_mut().zip(other.lines.into_iter()) {
+            a.hconcat(b);
+        }
+        self.key_callbacks.append(&mut other.key_callbacks);
+
+        let mut offset_mouse_callbacks = other
+            .mouse_callbacks
+            .map(|(name, pos, cb)| (name, pos + pos_offset, cb));
+        let idx_offset = self.mouse_callbacks.append(&mut offset_mouse_callbacks);
+        for row in &mut other.hit_map {
+            for cell in row {
+                *cell = cell.map(|i| i + idx_offset);
+            }
+        }
+
+        for (mut a, b) in self.hit_map.iter_mut().zip(other.hit_map.into_iter()) {
+            a.extend_from_slice(&b)
+        }
+
+        self.cursors.extend(
+            other
+                .cursors
+                .into_iter()
+                .map(move |(n, p)| (n, p + pos_offset)),
+        );
+        self.size.cols += other.size.cols;
+        self
+    }
+    pub fn concat_dir(self, direction: Direction, other: Self) -> Self {
+        match direction {
+            Direction::Horizontal => self.hconcat(other),
+            Direction::Vertical => self.vconcat(other),
+        }
     }
 }
+
+impl<N> fmt::Debug for TextBlock<N>
+where
+    N: Name,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "Block {{ lines: {:?}, size: {:?}, cursors: {:?} }}",
+            self.lines, self.size, self.cursors
+        )
+    }
+}
+
+// XXX TODO struct Frame { Size, Lines, focus: Option<Pos> }

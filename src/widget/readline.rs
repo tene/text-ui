@@ -2,7 +2,7 @@ use input::Key;
 use std::fmt;
 use {
     shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Segment, Shared,
-    ShouldPropagate, Widget, WidgetRenderContext,
+    ShouldPropagate, Widget, RenderContext,
 };
 
 pub enum ReadlineEvent<'a, N>

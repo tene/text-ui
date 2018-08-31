@@ -1,5 +1,5 @@
 //use input::{MouseButton, MouseEvent};
-use {shared, Color, Name, RenderBackend, Shared, TextBlock, Widget, WidgetRenderContext};
+use {shared, Color, Name, RenderBackend, RenderContext, Shared, TextBlock, Widget};
 
 #[derive(Debug, Default)]
 pub struct Log<N: Name> {

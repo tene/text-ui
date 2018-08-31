@@ -1,3 +1,23 @@
+Block -> TextBlock
 
-trait Application
-    pub fn mumble -> (Widget, Name) ?
+RenderBound
+    min/max height/width
+
+textblock.fit(bound)
+
+ctx.render(widget)
+ctx.render_bound(widget, bound)
+
+migrate core into executor type
+
+
+
+
+widget::list
+
+widget::focusedlist
+
+enum Segment {
+    Text { length: usize, text: String }
+    Border { length: usize, style: BorderStyle }
+}

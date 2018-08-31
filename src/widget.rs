@@ -1,6 +1,7 @@
 use input::{InputEvent, Key, MouseEvent};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::sync::mpsc::Sender;
 
 use AppEvent;
 
@@ -28,65 +29,96 @@ pub enum ShouldPropagate {
     Stop,
 }
 
-pub type KeyCallback<B, N> = Box<Fn(&WidgetEventContext<B, N>, Key) -> ShouldPropagate>;
+pub type KeyCallback<N> = Box<Fn(&EventContext<N>, Key) -> ShouldPropagate>;
 // XXX TODO need to use internal mouse event type instead of termion's
-pub type MouseCallback<B, N> =
-    Box<Fn(&WidgetEventContext<B, N>, Pos, MouseEvent) -> ShouldPropagate>;
+pub type MouseCallback<N> = Box<Fn(&EventContext<N>, Pos, MouseEvent) -> ShouldPropagate>;
 
-pub trait WidgetRenderContext<B, N>
-where
-    B: RenderBackend<N>,
-    N: Name,
-{
-    fn bound(&self) -> RenderBound;
-    //fn render(&self, widget: &Widget<B, N>) -> B::Element;
-    fn with_bound(&self, bound: RenderBound) -> Self;
-    fn render_sized(&self, bound: RenderBound, widget: &Widget<B, N>) -> B::Element;
-    fn clip_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
-    fn wrap_line<L: Into<TextLine<N>>>(&self, L) -> B::Element;
-    fn text<T: Into<TextBlock<N>>>(&self, T) -> B::Element;
+#[derive(Clone)]
+pub struct RenderContext {
+    bound: RenderBound,
 }
 
-pub trait WidgetEventContext<B, N>
-where
-    N: Name,
-    B: RenderBackend<N>,
-{
-    fn send_event(&self, AppEvent<N>);
-}
-
-pub trait RenderElement<B, N>: Sized
-where
-    N: Name,
-    B: RenderBackend<N>,
-{
-    fn size(&self) -> Size;
-    fn add_key_handler(self, name: Option<N>, callback: KeyCallback<B, N>) -> Self;
-    fn add_mouse_handler(self, name: Option<N>, callback: MouseCallback<B, N>) -> Self;
-    fn add_cursor(self, name: N, pos: Pos) -> Self;
-    fn get_cursor(&self, name: &N) -> Option<Pos>;
-    fn vconcat(self, other: Self) -> Self;
-    fn hconcat(self, other: Self) -> Self;
-    fn concat_dir(self, direction: Direction, other: Self) -> Self {
-        match direction {
-            Direction::Horizontal => self.hconcat(other),
-            Direction::Vertical => self.vconcat(other),
+impl RenderContext {
+    pub fn new(bound: RenderBound) -> Self {
+        Self { bound }
+    }
+    pub fn with_bound(&self, bound: RenderBound) -> Self {
+        Self::new(bound)
+    }
+    pub fn render_sized<N: Name, W: Widget<N>>(
+        &self,
+        bound: RenderBound,
+        widget: &W,
+    ) -> TextBlock<N> {
+        let block = widget.render(Self::new(bound));
+        let size = block.size();
+        if let Some(width) = bound.width {
+            //assert_eq!(width, size.cols);
+            if width != size.cols {
+                panic!(
+                    "bad block width!\nwidget: {:#?}\nbound: {:?}\nblock: {:#?}",
+                    widget, bound, block
+                );
+            }
         }
+        if let Some(height) = bound.height {
+            //assert_eq!(height, size.rows);
+            if height != size.rows {
+                panic!(
+                    "bad block height!\nwidget: {:#?}\nbound: {:?}\nblock: {:#?}",
+                    widget, bound, block
+                );
+            }
+        }
+        block
+    }
+    pub fn bound(&self) -> RenderBound {
+        self.bound
+    }
+    /*    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
+        let fragment: Fragment = content.into();
+        Block::from_fragment(&fragment, self.bound.constrain_height(1))
+    }
+    fn text<F: Into<Fragment>>(&self, content: F) -> Block<N> {
+        let fragment: Fragment = content.into();
+        Block::from_fragment(&fragment, self.bound)
+    }*/
+    /*
+    fn clip_line<L: Into<TextLine<N>>>(&self, line: L) -> Block<N> {
+        unimplemented!();
+    }
+    fn wrap_line<L: Into<TextLine<N>>>(&self, line: L) -> Block<N> {
+        unimplemented!();
+    }
+    fn text<T: Into<TextBlock<N>>>(&self, text: T) -> Block<N> {
+        unimplemented!();
+    }
+    */
+}
+
+pub struct EventContext<N: Name> {
+    sender: Sender<AppEvent<N>>,
+}
+
+impl<N: Name> EventContext<N> {
+    pub fn new(sender: Sender<AppEvent<N>>) -> Self {
+        Self { sender }
+    }
+    pub fn send_event(&self, event: AppEvent<N>) {
+        let _ = self.sender.send(event);
     }
 }
 
 pub trait RenderBackend<N: Name>: Sized {
-    type RenderContext: WidgetRenderContext<Self, N>;
-    type EventContext: WidgetEventContext<Self, N>;
-    type Element: RenderElement<Self, N>;
+    // XXX TODO Rather than accepting a TextBlock, this should accept a Frame, that's just Size + Lines + Option<Focus>
+    fn paint_frame(&mut self, frame: &TextBlock<N>, focus: &N);
 }
 
-pub trait Widget<B, N>: Debug
+pub trait Widget<N>: Debug
 where
-    B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, B::RenderContext) -> B::Element;
+    fn render(&self, RenderContext) -> TextBlock<N>;
 
     fn name(&self) -> Option<N>;
 
@@ -95,13 +127,12 @@ where
     }
 }
 
-impl<W, B, N> Widget<B, N> for Shared<W>
+impl<W, N> Widget<N> for Shared<W>
 where
-    W: Widget<B, N>,
-    B: RenderBackend<N>,
+    W: Widget<N>,
     N: Name,
 {
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
         self.read().unwrap().render(ctx)
     }
 
@@ -117,16 +148,11 @@ where
     }
 }
 
-pub trait App<B, N>: Widget<B, N>
+pub trait App<N>: Widget<N>
 where
-    B: RenderBackend<N>,
     N: Name,
 {
-    fn handle_input(
-        &mut self,
-        _ctx: &WidgetEventContext<B, N>,
-        _event: &InputEvent,
-    ) -> ShouldPropagate {
+    fn handle_input(&mut self, _ctx: &EventContext<N>, _event: &InputEvent) -> ShouldPropagate {
         ShouldPropagate::Continue
     }
     fn handle_resize(&mut self, Size) {}

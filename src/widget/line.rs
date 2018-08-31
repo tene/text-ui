@@ -1,8 +1,5 @@
 use std::iter::repeat;
-use {
-    Direction, FullGrowthPolicy, Name, RenderBackend, Segment, TextBlock, Widget,
-    WidgetRenderContext,
-};
+use {Direction, FullGrowthPolicy, Name, RenderBackend, RenderContext, Segment, TextBlock, Widget};
 
 #[derive(Debug)]
 pub struct Line {

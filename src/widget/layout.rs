@@ -1,47 +1,44 @@
 use std::fmt;
 use std::iter::repeat;
 
-use {Direction, GrowthPolicy, Name, RenderBackend, RenderElement, Widget, WidgetRenderContext};
+use {Direction, GrowthPolicy, Name, RenderBackend, RenderContext, TextBlock, Widget};
 
-pub struct Linear<'a, B, N>
+pub struct Linear<'a, N>
 where
-    B: 'a + RenderBackend<N>,
     N: 'a + Name,
 {
-    widgets: Vec<&'a dyn Widget<B, N>>,
+    widgets: Vec<&'a dyn Widget<N>>,
     direction: Direction,
 }
 
-impl<'a, B, N> Linear<'a, B, N>
+impl<'a, N> Linear<'a, N>
 where
-    B: 'a + RenderBackend<N>,
     N: 'a + Name,
 {
-    pub fn new(direction: Direction, widgets: Vec<&'a dyn Widget<B, N>>) -> Self {
+    pub fn new(direction: Direction, widgets: Vec<&'a dyn Widget<N>>) -> Self {
         Self { direction, widgets }
     }
-    pub fn hbox(widgets: Vec<&'a dyn Widget<B, N>>) -> Self {
+    pub fn hbox(widgets: Vec<&'a dyn Widget<N>>) -> Self {
         Self::new(Direction::Horizontal, widgets)
     }
-    pub fn vbox(widgets: Vec<&'a dyn Widget<B, N>>) -> Self {
+    pub fn vbox(widgets: Vec<&'a dyn Widget<N>>) -> Self {
         Self::new(Direction::Vertical, widgets)
     }
 }
 
-impl<'a, B, N> Widget<B, N> for Linear<'a, B, N>
+impl<'a, N> Widget<N> for Linear<'a, N>
 where
-    B: 'a + RenderBackend<N>,
     N: 'a + Name,
 {
     fn name(&self) -> Option<N> {
         None
     }
 
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
         let dir = self.direction;
         // Clippy complains about a complex type here; I'm not convinced it's an improvement.
         type Segments<T> = (Vec<(usize, T)>, Vec<(usize, T)>);
-        let (fixed, greedy): Segments<&dyn Widget<B, N>> = self
+        let (fixed, greedy): Segments<&dyn Widget<N>> = self
             .widgets
             .clone()
             .into_iter()
@@ -59,7 +56,7 @@ where
             .expect("Linear layout without off-axis constraint");
         let greedy_count = greedy.len();
         let free_bound = ctx.bound().free_direction(dir);
-        let mut blocks: Vec<(usize, B::Element)> = fixed
+        let mut blocks: Vec<(usize, TextBlock<N>)> = fixed
             .into_iter()
             .map(|(i, w)| {
                 // XXX TODO Maybe should be fetching bounds from children?
@@ -85,9 +82,8 @@ where
     }
 }
 
-impl<'a, B, N> fmt::Debug for Linear<'a, B, N>
+impl<'a, N> fmt::Debug for Linear<'a, N>
 where
-    B: 'a + RenderBackend<N>,
     N: 'a + Name,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

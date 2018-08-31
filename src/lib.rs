@@ -20,8 +20,8 @@ pub use backend::TermionBackend;
 pub use input::{InputEvent, Key, MouseEvent};
 pub use ir::{ContentID, Segment, TextBlock, TextLine};
 pub use widget::{
-    App, KeyCallback, Line, Linear, MouseCallback, Name, RenderBackend, RenderElement,
-    ShouldPropagate, Widget, WidgetEventContext, WidgetRenderContext,
+    App, EventContext, KeyCallback, Line, Linear, MouseCallback, Name, RenderBackend,
+    RenderContext, ShouldPropagate, Widget,
 };
 
 #[derive(Debug, PartialEq)]
