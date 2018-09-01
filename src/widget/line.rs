@@ -19,12 +19,11 @@ impl Line {
     }
 }
 
-impl<B, N> Widget<B, N> for Line
+impl<N> Widget<N> for Line
 where
-    B: RenderBackend<N>,
     N: Name,
 {
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
         let count = ctx
             .bound()
             .in_direction(self.direction)

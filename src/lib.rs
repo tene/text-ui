@@ -11,6 +11,7 @@ use std::ops;
 use std::sync::{Arc, RwLock};
 
 pub mod backend;
+pub mod executor;
 mod indextree;
 pub mod input;
 pub mod ir;
@@ -18,10 +19,10 @@ pub mod widget;
 
 pub use backend::TermionBackend;
 pub use input::{InputEvent, Key, MouseEvent};
-pub use ir::{ContentID, Segment, TextBlock, TextLine};
+pub use ir::{ContentID, Frame, FrameLine, Segment, TextBlock, TextLine};
 pub use widget::{
-    App, EventContext, KeyCallback, Line, Linear, MouseCallback, Name, RenderBackend,
-    RenderContext, ShouldPropagate, Widget,
+    App, BackendContext, EventContext, KeyCallback, Line, Linear, MouseCallback, Name,
+    RenderBackend, RenderContext, ShouldPropagate, Widget,
 };
 
 #[derive(Debug, PartialEq)]
@@ -35,7 +36,7 @@ pub fn shared<T>(item: T) -> Shared<T> {
     Arc::new(RwLock::new(item))
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Size {
     pub cols: usize,
     pub rows: usize,

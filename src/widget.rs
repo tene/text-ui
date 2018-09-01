@@ -15,10 +15,8 @@ pub use self::line::Line;
 pub use self::log::Log;
 pub use self::readline::Readline;
 
-use {
-    Color, ContentID, Direction, FullGrowthPolicy, Pos, RenderBound, Shared, Size, TextBlock,
-    TextLine,
-};
+use executor::Event;
+use {Color, ContentID, Frame, FullGrowthPolicy, Pos, RenderBound, Shared, Size, TextBlock};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -97,21 +95,40 @@ impl RenderContext {
 }
 
 pub struct EventContext<N: Name> {
-    sender: Sender<AppEvent<N>>,
+    sender: Sender<Event<N>>,
 }
 
 impl<N: Name> EventContext<N> {
-    pub fn new(sender: Sender<AppEvent<N>>) -> Self {
+    pub(crate) fn new(sender: Sender<Event<N>>) -> Self {
         Self { sender }
     }
-    pub fn send_event(&self, event: AppEvent<N>) {
-        let _ = self.sender.send(event);
+    pub fn send_event(&self, event: AppEvent<N>) -> Result<(), ()> {
+        self.sender.send(Event::App(event)).map_err(|_| ())
     }
 }
 
-pub trait RenderBackend<N: Name>: Sized {
-    // XXX TODO Rather than accepting a TextBlock, this should accept a Frame, that's just Size + Lines + Option<Focus>
-    fn paint_frame(&mut self, frame: &TextBlock<N>, focus: &N);
+#[derive(Clone)]
+pub struct BackendContext<N: Name> {
+    sender: Sender<Event<N>>,
+}
+
+impl<N: Name> BackendContext<N> {
+    pub(crate) fn new(sender: Sender<Event<N>>) -> Self {
+        Self { sender }
+    }
+    pub fn send_input(&self, input: InputEvent) -> Result<(), ()> {
+        self.sender.send(Event::Input(input)).map_err(|_| ())
+    }
+    pub fn resize(&self, size: Size) -> Result<(), ()> {
+        self.sender.send(Event::Resize(size)).map_err(|_| ())
+    }
+}
+
+pub trait RenderBackend {
+    fn paint_frame(&mut self, frame: Frame);
+    fn new<N: Name + 'static>(BackendContext<N>) -> Self;
+    fn size(&self) -> Size;
+    fn resize(&mut self, Size);
 }
 
 pub trait Widget<N>: Debug

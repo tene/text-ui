@@ -6,8 +6,8 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use indextree::IndexTree;
 use {
-    Direction, EventContext, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos, RenderBound,
-    Size,
+    App, Color, Direction, EventContext, Key, KeyCallback, MouseCallback, MouseEvent, Name, Pos,
+    RenderBound, Size,
 };
 
 // XXX TODO Better name??
@@ -211,8 +211,8 @@ impl<N: Name> TextBlock<N> {
         self.cursors.insert(name, pos);
         self
     }
-    pub fn get_cursor(&self, name: &N) -> Option<Pos> {
-        self.cursors.get(name).cloned()
+    pub fn get_cursor(&self, name: N) -> Option<Pos> {
+        self.cursors.get(&name).cloned()
     }
     // Maybe factor out the common parts of these?
     pub fn vconcat(mut self, mut other: Self) -> Self {
@@ -279,6 +279,24 @@ impl<N: Name> TextBlock<N> {
             Direction::Vertical => self.vconcat(other),
         }
     }
+    pub fn render_frame(&self, app: &App<N>, focus_name: Option<N>) -> Frame {
+        let size = self.size;
+        let focus = focus_name.and_then(|name| self.get_cursor(name));
+        let image: Vec<FrameLine> = self
+            .lines
+            .iter()
+            .map(|tl| {
+                tl.segments
+                    .iter()
+                    .map(|seg| {
+                        let (mfg, mbg) = app.style(seg.id);
+                        let fg = mfg.unwrap_or(Color::Reset);
+                        let bg = mbg.unwrap_or(Color::Reset);
+                        (fg, bg, seg.text.as_ref(), seg.len)
+                    }).collect()
+            }).collect();
+        Frame::new(size, image, focus)
+    }
 }
 
 impl<N> fmt::Debug for TextBlock<N>
@@ -294,4 +312,16 @@ where
     }
 }
 
-// XXX TODO struct Frame { Size, Lines, focus: Option<Pos> }
+pub type FrameLine<'a> = Vec<(Color, Color, &'a str, usize)>;
+
+pub struct Frame<'a> {
+    pub size: Size,
+    pub image: Vec<FrameLine<'a>>,
+    pub focus: Option<Pos>,
+}
+
+impl<'a> Frame<'a> {
+    pub fn new(size: Size, image: Vec<FrameLine<'a>>, focus: Option<Pos>) -> Self {
+        Self { size, image, focus }
+    }
+}

@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderElement, Segment, Shared,
-    ShouldPropagate, Widget, RenderContext,
+    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderContext, Segment, Shared,
+    ShouldPropagate, TextBlock, Widget,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -20,6 +20,7 @@ where
     pub line: String,
     pub index: usize,
     pub listeners: Vec<Box<Fn(&ReadlineEvent<N>) -> bool>>,
+    // XXX TODO Prompt
 }
 
 impl<N> ReadlineInner<N>
@@ -111,15 +112,14 @@ where
     }
 }
 
-impl<B, N> Widget<B, N> for Readline<N>
+impl<N> Widget<N> for Readline<N>
 where
     N: 'static + Name,
-    B: RenderBackend<N>,
 {
     fn name(&self) -> Option<N> {
         Some(self.inner.read().unwrap().name)
     }
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
         let inner = self.inner.clone();
         let inner2 = inner.clone();
         let name = inner.read().unwrap().name;

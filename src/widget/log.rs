@@ -1,5 +1,5 @@
 //use input::{MouseButton, MouseEvent};
-use {shared, Color, Name, RenderBackend, RenderContext, Shared, TextBlock, Widget};
+use {shared, Color, Name, RenderContext, Shared, TextBlock, Widget};
 
 #[derive(Debug, Default)]
 pub struct Log<N: Name> {
@@ -31,15 +31,14 @@ where
     }
 }
 
-impl<B, N> Widget<B, N> for Log<N>
+impl<N> Widget<N> for Log<N>
 where
-    B: RenderBackend<N>,
     N: Name,
 {
     fn name(&self) -> Option<N> {
         self.name
     }
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
         //let scroll_pos = self.scroll_pos.clone();
         let text = TextBlock::new_lines(self.name, "Log", "Content", self.lines.clone());
         ctx.text(text) /*.add_key_handler(

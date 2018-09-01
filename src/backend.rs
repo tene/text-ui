@@ -1,5 +1,7 @@
 //use termion::color::{self, Color};
 //use termion::cursor::{Goto, Hide, Show};
+use termion::color as termion_color;
+use termion::color::Color as TermColor;
 use termion::cursor::{Goto, Hide, Show};
 use termion::input::{MouseTerminal, TermRead};
 use termion::raw::{IntoRawMode, RawTerminal};
@@ -7,135 +9,86 @@ use termion::screen::AlternateScreen;
 
 use signal_hook::iterator::Signals;
 
+use std::fmt;
 use std::io::{stdin, stdout, Stdout, Write};
 use std::iter::repeat;
-use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
 
-use {
-    App, AppEvent, EventContext, InputEvent, Name, RenderBackend, RenderContext, Size, TextBlock,
-    TextLine, Widget,
-};
+use {BackendContext, Color, Frame, Name, RenderBackend, Size};
 
-mod element;
-
-#[derive(Debug, PartialEq)]
-enum Event<N: Name> {
-    Input(InputEvent),
-    App(AppEvent<N>),
-    Resize,
-}
-
-pub struct TermionBackend<N: Name> {
+pub struct TermionBackend {
     screen: MouseTerminal<AlternateScreen<RawTerminal<Stdout>>>,
     pub size: Size,
-    receiver: Receiver<Event<N>>,
-    sender: Sender<Event<N>>,
     last_frame: Vec<String>,
 }
 
-impl<N: Name + 'static> TermionBackend<N> {
-    pub fn new() -> Self {
+impl RenderBackend for TermionBackend {
+    fn new<N: Name + 'static>(ctx: BackendContext<N>) -> Self {
         let screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
+        write!(screen, "{}", termion::clear::All).unwrap();
         let (width, height) = termion::terminal_size().unwrap();
         let size = Size::new(width as usize, height as usize);
-        let (sender, receiver) = channel();
         let last_frame = repeat("".to_owned()).take(height as usize).collect();
-        TermionBackend {
-            size,
-            screen,
-            sender,
-            receiver,
-            last_frame,
-        }
-    }
-    pub fn run(&mut self, app: &mut impl App<N>, mut focus: N) {
-        let input_sender = self.sender.clone();
+        let ctx2 = ctx.clone();
         thread::spawn(move || {
             /*let stdin = stdin();
             let mut events = stdin.events();*/
             'outer: loop {
                 for event in stdin().events() {
-                    match input_sender.send(Event::Input(event.unwrap())) {
+                    match ctx.send_input(event.unwrap()) {
                         Ok(()) => continue,
                         Err(_) => break 'outer,
                     }
                 }
             }
         });
-        let signal_sender = self.sender.clone();
-        let signals = Signals::new(&[libc::SIGWINCH]).expect("Failed to register signal handler");
         thread::spawn(move || 'outer: loop {
+            let signals =
+                Signals::new(&[libc::SIGWINCH]).expect("Failed to register signal handler");
             for signal in &signals {
-                let event = match signal {
-                    libc::SIGWINCH => Event::Resize,
-                    _ => continue,
-                };
-                match signal_sender.send(event) {
-                    Ok(()) => continue,
-                    Err(_) => break 'outer,
-                }
-            }
-        });
-        let event_ctx = EventContext::new(self.sender.clone());
-        write!(self.screen, "{}", termion::clear::All).unwrap();
-        'outer: loop {
-            let render_ctx = RenderContext::new(self.size.into());
-            let ui: TextBlock<N> = app.render(render_ctx);
-            self.paint_frame(&ui, &focus);
-            {
-                // LOL wait until an event before doing anything this is a dumb hack
-                let event = self.receiver.recv().unwrap();
-                let _ = self.sender.send(event);
-            }
-            for event in self.receiver.try_iter() {
-                match event {
-                    Event::App(AppEvent::Exit) => break 'outer,
-                    Event::App(AppEvent::SetFocus(f)) => focus = f,
-                    Event::Resize => {
+                match signal {
+                    libc::SIGWINCH => {
                         let (width, height) = termion::terminal_size().unwrap();
-                        let size = Size::new(width as usize, height as usize);
-                        self.size = size;
-                        self.last_frame.resize(height as usize, "".to_owned());
-                        app.handle_resize(size);
-                    }
-                    Event::Input(event) => {
-                        use ShouldPropagate::*;
-                        match app.handle_input(&event_ctx, &event) {
-                            Stop => break,
-                            Continue => {}
-                        };
-                        match event {
-                            InputEvent::Key(k) => ui.handle_key(&event_ctx, &focus, k),
-                            InputEvent::Mouse(m) => ui.handle_mouse(&event_ctx, m),
-                            InputEvent::Unsupported(_) => {}
+                        match ctx2.resize(Size::new(width as usize, height as usize)) {
+                            Ok(()) => continue,
+                            Err(_) => break 'outer,
                         }
                     }
-                }
+                    _ => continue,
+                };
             }
+        });
+
+        TermionBackend {
+            size,
+            screen,
+            last_frame,
         }
     }
-}
-
-impl<N: Name + 'static> Default for TermionBackend<N> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<N: Name> RenderBackend<N> for TermionBackend<N> {
-    fn paint_frame(&mut self, image: &TextBlock<N>, focus: &N) {
+    fn paint_frame(&mut self, frame: Frame) {
         //write!(self.screen, "{}", termion::clear::All).unwrap();
-        for (i, (new_line, last_line)) in image.lines.iter().zip(self.last_frame.iter()).enumerate()
-        {
+        let new_frame: Vec<String> = frame
+            .image
+            .into_iter()
+            .map(|chunks| {
+                chunks
+                    .into_iter()
+                    .fold(String::new(), |l, (fg, bg, text, _)| {
+                        l.push_str(&format!(
+                            "{}{}",
+                            termion_color::Fg(fg),
+                            termion_color::Bg(bg)
+                        ));
+                        l.push_str(text);
+                        l
+                    })
+            }).collect();
+        for (i, (new_line, last_line)) in new_frame.iter().zip(self.last_frame.iter()).enumerate() {
             if new_line != last_line {
-                write!(self.screen, "{}", Goto(1, 1 + i as u16)).unwrap();
-                for span in &new_line.spans {
-                    write!(self.screen, "{}{}", span.attr, span.text).unwrap();
-                }
+                write!(self.screen, "{}{}", Goto(1, 1 + i as u16), new_line).unwrap();
             }
         }
-        if let Some(pos) = image.get_cursor(focus) {
+        if let Some(pos) = frame.focus {
             write!(
                 self.screen,
                 "{}{}",
@@ -146,6 +99,62 @@ impl<N: Name> RenderBackend<N> for TermionBackend<N> {
             write!(self.screen, "{}", Hide);
         }
         self.screen.flush().unwrap();
-        self.last_frame = image.lines.clone();
+        self.last_frame = new_frame;
+    }
+    fn resize(&mut self, new_size: Size) {
+        self.size = new_size;
+        self.last_frame
+            .resize(new_size.rows as usize, "".to_owned());
+    }
+    fn size(&self) -> Size {
+        self.size
+    }
+}
+
+// This is redundant because termion colors are not sized, and I didn't want to add a box everywhere
+impl TermColor for Color {
+    fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Color::LightBlack => termion_color::LightBlack.write_fg(f),
+            Color::LightBlue => termion_color::LightBlue.write_fg(f),
+            Color::LightCyan => termion_color::LightCyan.write_fg(f),
+            Color::LightGreen => termion_color::LightGreen.write_fg(f),
+            Color::LightMagenta => termion_color::LightMagenta.write_fg(f),
+            Color::LightRed => termion_color::LightRed.write_fg(f),
+            Color::LightWhite => termion_color::LightWhite.write_fg(f),
+            Color::LightYellow => termion_color::LightYellow.write_fg(f),
+            Color::Black => termion_color::Black.write_fg(f),
+            Color::Blue => termion_color::Blue.write_fg(f),
+            Color::Cyan => termion_color::Cyan.write_fg(f),
+            Color::Green => termion_color::Green.write_fg(f),
+            Color::Magenta => termion_color::Magenta.write_fg(f),
+            Color::Red => termion_color::Red.write_fg(f),
+            Color::White => termion_color::White.write_fg(f),
+            Color::Yellow => termion_color::Yellow.write_fg(f),
+            Color::Rgb(r, g, b) => termion_color::Rgb(*r, *g, *b).write_fg(f),
+            Color::Reset => termion_color::Reset.write_fg(f),
+        }
+    }
+    fn write_bg(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Color::LightBlack => termion_color::LightBlack.write_bg(f),
+            Color::LightBlue => termion_color::LightBlue.write_bg(f),
+            Color::LightCyan => termion_color::LightCyan.write_bg(f),
+            Color::LightGreen => termion_color::LightGreen.write_bg(f),
+            Color::LightMagenta => termion_color::LightMagenta.write_bg(f),
+            Color::LightRed => termion_color::LightRed.write_bg(f),
+            Color::LightWhite => termion_color::LightWhite.write_bg(f),
+            Color::LightYellow => termion_color::LightYellow.write_bg(f),
+            Color::Black => termion_color::Black.write_bg(f),
+            Color::Blue => termion_color::Blue.write_bg(f),
+            Color::Cyan => termion_color::Cyan.write_bg(f),
+            Color::Green => termion_color::Green.write_bg(f),
+            Color::Magenta => termion_color::Magenta.write_bg(f),
+            Color::Red => termion_color::Red.write_bg(f),
+            Color::White => termion_color::White.write_bg(f),
+            Color::Yellow => termion_color::Yellow.write_bg(f),
+            Color::Rgb(r, g, b) => termion_color::Rgb(*r, *g, *b).write_bg(f),
+            Color::Reset => termion_color::Reset.write_bg(f),
+        }
     }
 }
