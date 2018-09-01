@@ -3,7 +3,8 @@ use text_ui::input::Key;
 use text_ui::widget::{Log, Readline};
 use text_ui::{
     shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
-    ContentID, EventContext, InputEvent, Line, RenderBackend, Shared, Size, TermionBackend, Widget,
+    ContentID, EventContext, Executor, InputEvent, Line, RenderContext, Shared, Size,
+    TermionBackend, TextBlock, Widget,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -55,37 +56,40 @@ impl DemoApp {
     }
 }
 
-impl<B: RenderBackend<MyNames>> Widget<B, MyNames> for DemoApp {
+impl Widget<MyNames> for DemoApp {
     fn name(&self) -> Option<MyNames> {
         None
     }
-    fn render(&self, ctx: B::RenderContext) -> B::Element {
+    fn render(&self, ctx: RenderContext<MyNames>) -> TextBlock<MyNames> {
         let vline = Line::vertical();
         let hline = Line::horizontal();
-        let logs: Linear<B, MyNames> = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
+        let logs: Linear<MyNames> = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
         let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
         ui.render(ctx)
     }
+    fn widget_type(&self) -> &'static str {
+        "DemoApp"
+    }
 }
 
-impl<B: RenderBackend<MyNames>> App<B, MyNames> for DemoApp {
+impl App<MyNames> for DemoApp {
     fn handle_input(
         &mut self,
-        ctx: &EventContext<B, MyNames>,
+        ctx: &EventContext<MyNames>,
         event: &InputEvent,
     ) -> text_ui::ShouldPropagate {
         use text_ui::ShouldPropagate::*;
         match event {
             InputEvent::Key(Key::Esc) => {
-                ctx.send_event(AppEvent::Exit);
+                let _ = ctx.send_event(AppEvent::Exit);
                 Stop
             }
             InputEvent::Key(Key::Ctrl('a')) => {
-                ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
+                let _ = ctx.send_event(AppEvent::SetFocus(MyNames::Input1));
                 Stop
             }
             InputEvent::Key(Key::Ctrl('b')) => {
-                ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
+                let _ = ctx.send_event(AppEvent::SetFocus(MyNames::Input2));
                 Stop
             }
             InputEvent::Mouse(m) => {
@@ -114,6 +118,6 @@ fn main() {
     let mut app = DemoApp::new();
     app.log1.write().unwrap().log_msg("Ctrl+A here");
     app.log2.write().unwrap().log_msg("Ctrl+B here");
-    let mut be = TermionBackend::new();
-    be.run(&mut app, MyNames::Input1);
+    let mut ex: Executor<MyNames, TermionBackend> = Executor::new();
+    ex.run(&mut app, MyNames::Input1);
 }

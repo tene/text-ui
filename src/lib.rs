@@ -1,6 +1,7 @@
 #![feature(rust_2018_preview)]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
+#![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
 
 extern crate libc;
 extern crate signal_hook;
@@ -18,6 +19,7 @@ pub mod ir;
 pub mod widget;
 
 pub use backend::TermionBackend;
+pub use executor::Executor;
 pub use input::{InputEvent, Key, MouseEvent};
 pub use ir::{ContentID, Frame, FrameLine, Segment, TextBlock, TextLine};
 pub use widget::{

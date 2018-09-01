@@ -20,7 +20,7 @@ pub struct Executor<N: Name, B: RenderBackend> {
 }
 
 impl<N: Name + 'static, B: RenderBackend> Executor<N, B> {
-    pub fn new(be: B) -> Self {
+    pub fn new() -> Self {
         let (sender, receiver) = channel();
         let bc = BackendContext::new(sender.clone());
         let be = B::new(bc);
@@ -29,11 +29,10 @@ impl<N: Name + 'static, B: RenderBackend> Executor<N, B> {
             size,
             sender,
             receiver,
-            be,
+            be: be,
         }
     }
     pub fn run(&mut self, app: &mut impl App<N>, mut focus: N) {
-        let input_sender = self.sender.clone();
         let event_ctx = EventContext::new(self.sender.clone());
         'outer: loop {
             let render_ctx = RenderContext::from_widget(self.size.into(), app);

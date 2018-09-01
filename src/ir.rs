@@ -10,6 +10,20 @@ use {
     RenderBound, Size,
 };
 
+// XXX TODO I think this could return impl Iterator<Item=String> instead, but lifetime trouble
+fn split_line_graphemes<'a>(line: &'a str, width: usize) -> Vec<String> {
+    let mut letters: Vec<&'a str> = UnicodeSegmentation::graphemes(line, true).collect();
+    let len = letters.len();
+    match len % width {
+        0 => {}
+        n => letters.resize(len + (width - n), " "),
+    };
+    letters
+        .chunks(width)
+        .map(|ls: &[&'a str]| ls.concat())
+        .collect()
+}
+
 // XXX TODO Better name??
 #[derive(Debug, Clone, Copy)]
 pub struct ContentID<N: Name> {
@@ -66,13 +80,14 @@ impl<N: Name> TextLine<N> {
                 .last()
                 .expect("Attempt to clip empty TextLine")
                 .id;
-            self.push(Segment::blank_sized(last_id, len - self.len));
+            let filler = Segment::blank_sized(last_id, len - self.len);
+            self.push(filler);
         } else if self.len > len {
             let mut accum: usize = 0;
             self.segments = self
                 .segments
                 .into_iter()
-                .filter_map(move |s| {
+                .filter_map(move |mut s| {
                     if accum >= len {
                         None
                     } else if accum + s.len <= len {
@@ -82,6 +97,7 @@ impl<N: Name> TextLine<N> {
                         s.text = UnicodeSegmentation::graphemes(s.text.as_str(), true)
                             .take(len - accum)
                             .collect();
+                        s.len = len - accum;
                         accum = len;
                         Some(s)
                     }
@@ -135,9 +151,6 @@ impl<N: Name> TextBlock<N> {
             size,
         }
     }
-    pub fn new_clipped(lines: Vec<TextLine<N>>, width: usize, height: usize) -> Self {
-        let tb = Self::new(lines);
-    }
     pub fn handle_key(&self, event_ctx: &EventContext<N>, focus: &N, key: Key) {
         use ShouldPropagate::*;
         for cb in self.key_callbacks.get_iter(focus) {
@@ -165,18 +178,11 @@ impl<N: Name> TextBlock<N> {
             }
         }
     }
-    pub fn clip_lines(
-        name: Option<N>,
-        widget: &'static str,
-        class: &'static str,
-        lines: Vec<String>,
-        bound: RenderBound,
-    ) -> Self {
+    pub fn clip_lines(id: ContentID<N>, lines: Vec<String>, bound: RenderBound) -> Self {
         let width = match bound.width {
             Some(width) => width,
             None => lines.iter().map(|l| l.len()).max().unwrap_or(0),
         };
-        let id = ContentID::new(name, widget, class);
         let tl_iter = lines.into_iter().map(|l| {
             let tl: TextLine<N> = Segment::new_id(id, l).into();
             tl.clip(width)
@@ -188,7 +194,27 @@ impl<N: Name> TextBlock<N> {
                 .collect(),
             None => tl_iter.collect(),
         };
-        Self::new(lines, width, lines.len())
+        let height = lines.len();
+        Self::new(lines, width, height)
+    }
+    pub fn wrap_lines(id: ContentID<N>, lines: Vec<String>, bound: RenderBound) -> Self {
+        let width = match bound.width {
+            Some(width) => width,
+            None => lines.iter().map(|l| l.len()).max().unwrap_or(0),
+        };
+        let tl_iter = lines
+            .into_iter()
+            .flat_map(|l| split_line_graphemes(&l, width).into_iter())
+            .map(|l| Segment::new_id(id, l).into());
+        let lines: Vec<TextLine<N>> = match bound.height {
+            Some(height) => tl_iter
+                .chain(repeat(Segment::blank_sized(id, width).into()))
+                .take(height)
+                .collect(),
+            None => tl_iter.collect(),
+        };
+        let height = lines.len();
+        Self::new(lines, width, height)
     }
     pub fn size(&self) -> Size {
         self.size

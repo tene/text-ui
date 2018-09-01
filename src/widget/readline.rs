@@ -1,8 +1,8 @@
 use input::Key;
 use std::fmt;
 use {
-    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderBackend, RenderContext, Segment, Shared,
-    ShouldPropagate, TextBlock, Widget,
+    shared, AppEvent, FullGrowthPolicy, Name, Pos, RenderContext, Shared, ShouldPropagate,
+    TextBlock, Widget,
 };
 
 pub enum ReadlineEvent<'a, N>
@@ -125,20 +125,15 @@ where
         let name = inner.read().unwrap().name;
         let line = inner.read().unwrap().line.to_string();
         let index = inner.read().unwrap().index;
-        let seg = Segment::new(
-            Some(self.inner.read().unwrap().name),
-            "Input",
-            "Buffer",
-            line,
-        );
-        ctx.clip_line(seg)
+        ctx.with_bound(ctx.bound().constrain_height(1))
+            .clip_lines("Buffer", vec![line])
             .add_key_handler(
                 Some(name),
                 Box::new(move |_ctx, k| inner.write().unwrap().handle_key(k)),
             ).add_mouse_handler(
                 Some(name),
                 Box::new(move |ctx, pos, _m| {
-                    ctx.send_event(AppEvent::SetFocus(name));
+                    let _ = ctx.send_event(AppEvent::SetFocus(name));
                     inner2.write().unwrap().set_index(pos.col);
                     ShouldPropagate::Stop
                 }),

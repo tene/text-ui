@@ -1,7 +1,7 @@
 use std::fmt;
 use std::iter::repeat;
 
-use {Direction, GrowthPolicy, Name, RenderBackend, RenderContext, TextBlock, Widget};
+use {Direction, GrowthPolicy, Name, RenderContext, TextBlock, Widget};
 
 pub struct Linear<'a, N>
 where

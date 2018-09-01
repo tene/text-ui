@@ -24,7 +24,8 @@ pub struct TermionBackend {
 
 impl RenderBackend for TermionBackend {
     fn new<N: Name + 'static>(ctx: BackendContext<N>) -> Self {
-        let screen = MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
+        let mut screen =
+            MouseTerminal::from(AlternateScreen::from(stdout().into_raw_mode().unwrap()));
         write!(screen, "{}", termion::clear::All).unwrap();
         let (width, height) = termion::terminal_size().unwrap();
         let size = Size::new(width as usize, height as usize);
@@ -73,7 +74,7 @@ impl RenderBackend for TermionBackend {
             .map(|chunks| {
                 chunks
                     .into_iter()
-                    .fold(String::new(), |l, (fg, bg, text, _)| {
+                    .fold(String::new(), |mut l, (fg, bg, text, _)| {
                         l.push_str(&format!(
                             "{}{}",
                             termion_color::Fg(fg),

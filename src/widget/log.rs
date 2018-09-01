@@ -40,8 +40,8 @@ where
     }
     fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         //let scroll_pos = self.scroll_pos.clone();
-        let text = TextBlock::new_lines(self.name, "Log", "Content", self.lines.clone());
-        ctx.text(text) /*.add_key_handler(
+        ctx.wrap_lines("Content", self.lines.clone())
+        /*.add_key_handler(
             None,
             Box::new(move |_ctx, e| {
                 use ShouldPropagate::*;

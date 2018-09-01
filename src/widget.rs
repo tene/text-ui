@@ -16,10 +16,7 @@ pub use self::log::Log;
 pub use self::readline::Readline;
 
 use executor::Event;
-use {
-    Color, ContentID, Frame, FullGrowthPolicy, Pos, RenderBound, Segment, Shared, Size, TextBlock,
-    TextLine,
-};
+use {Color, ContentID, Frame, FullGrowthPolicy, Pos, RenderBound, Shared, Size, TextBlock};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -85,16 +82,11 @@ impl<N: Name> RenderContext<N> {
     }
     pub fn clip_lines(&self, class: &'static str, lines: Vec<String>) -> TextBlock<N> {
         let id = ContentID::new(self.name, class, self.widget_type);
-        let lines: Vec<TextLine<N>> = lines
-            .into_iter()
-            .map(|l| Segment::new_id(id, l).into())
-            .collect();
-        let width = self
-            .bound
-            .width
-            .unwrap_or_else(|| lines.iter().map(|l| l.len).max().unwrap_or(0));
-        let height = self.bound.height.unwrap_or(lines.len());
-        TextBlock::new_clipped(lines, width, height)
+        TextBlock::clip_lines(id, lines, self.bound)
+    }
+    pub fn wrap_lines(&self, class: &'static str, lines: Vec<String>) -> TextBlock<N> {
+        let id = ContentID::new(self.name, class, self.widget_type);
+        TextBlock::wrap_lines(id, lines, self.bound)
     }
     /*    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
