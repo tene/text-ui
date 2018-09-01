@@ -43,10 +43,10 @@ impl RenderContext {
     pub fn with_bound(&self, bound: RenderBound) -> Self {
         Self::new(bound)
     }
-    pub fn render_sized<N: Name, W: Widget<N>>(
+    pub fn render_sized<N: Name>(
         &self,
         bound: RenderBound,
-        widget: &W,
+        widget: &dyn Widget<N>,
     ) -> TextBlock<N> {
         let block = widget.render(Self::new(bound));
         let size = block.size();
