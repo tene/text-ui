@@ -16,7 +16,10 @@ pub use self::log::Log;
 pub use self::readline::Readline;
 
 use executor::Event;
-use {Color, ContentID, Frame, FullGrowthPolicy, Pos, RenderBound, Shared, Size, TextBlock};
+use {
+    Color, ContentID, Frame, FullGrowthPolicy, Pos, RenderBound, Segment, Shared, Size, TextBlock,
+    TextLine,
+};
 
 pub trait Name: Hash + Eq + Clone + Copy + Debug + Send {}
 
@@ -32,23 +35,30 @@ pub type KeyCallback<N> = Box<Fn(&EventContext<N>, Key) -> ShouldPropagate>;
 pub type MouseCallback<N> = Box<Fn(&EventContext<N>, Pos, MouseEvent) -> ShouldPropagate>;
 
 #[derive(Clone)]
-pub struct RenderContext {
+pub struct RenderContext<N: Name> {
     bound: RenderBound,
+    name: Option<N>,
+    widget_type: &'static str,
 }
 
-impl RenderContext {
-    pub fn new(bound: RenderBound) -> Self {
-        Self { bound }
+impl<N: Name> RenderContext<N> {
+    pub(crate) fn from_widget(bound: RenderBound, widget: &dyn Widget<N>) -> Self {
+        let name = widget.name();
+        let widget_type = widget.widget_type();
+        Self::new(bound, name, widget_type)
+    }
+    fn new(bound: RenderBound, name: Option<N>, widget_type: &'static str) -> Self {
+        Self {
+            bound,
+            name,
+            widget_type,
+        }
     }
     pub fn with_bound(&self, bound: RenderBound) -> Self {
-        Self::new(bound)
+        Self::new(bound, self.name, self.widget_type)
     }
-    pub fn render_sized<N: Name>(
-        &self,
-        bound: RenderBound,
-        widget: &dyn Widget<N>,
-    ) -> TextBlock<N> {
-        let block = widget.render(Self::new(bound));
+    pub fn render_sized(&self, bound: RenderBound, widget: &dyn Widget<N>) -> TextBlock<N> {
+        let block = widget.render(Self::from_widget(bound, widget));
         let size = block.size();
         if let Some(width) = bound.width {
             //assert_eq!(width, size.cols);
@@ -72,6 +82,19 @@ impl RenderContext {
     }
     pub fn bound(&self) -> RenderBound {
         self.bound
+    }
+    pub fn clip_lines(&self, class: &'static str, lines: Vec<String>) -> TextBlock<N> {
+        let id = ContentID::new(self.name, class, self.widget_type);
+        let lines: Vec<TextLine<N>> = lines
+            .into_iter()
+            .map(|l| Segment::new_id(id, l).into())
+            .collect();
+        let width = self
+            .bound
+            .width
+            .unwrap_or_else(|| lines.iter().map(|l| l.len).max().unwrap_or(0));
+        let height = self.bound.height.unwrap_or(lines.len());
+        TextBlock::new_clipped(lines, width, height)
     }
     /*    fn line<F: Into<Fragment>>(&self, content: F) -> Block<N> {
         let fragment: Fragment = content.into();
@@ -107,6 +130,7 @@ impl<N: Name> EventContext<N> {
     }
 }
 
+// XXX TODO I think we can avoid having this parameterized somehow...
 #[derive(Clone)]
 pub struct BackendContext<N: Name> {
     sender: Sender<Event<N>>,
@@ -126,7 +150,7 @@ impl<N: Name> BackendContext<N> {
 
 pub trait RenderBackend {
     fn paint_frame(&mut self, frame: Frame);
-    fn new<N: Name + 'static>(BackendContext<N>) -> Self;
+    fn new<N: Name + 'static>(BackendContext<N>) -> Self; // XXX TODO I think we can avoid having this parameterized somehow...
     fn size(&self) -> Size;
     fn resize(&mut self, Size);
 }
@@ -135,9 +159,11 @@ pub trait Widget<N>: Debug
 where
     N: Name,
 {
-    fn render(&self, RenderContext) -> TextBlock<N>;
+    fn render(&self, RenderContext<N>) -> TextBlock<N>;
 
     fn name(&self) -> Option<N>;
+
+    fn widget_type(&self) -> &'static str;
 
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::default()
@@ -149,7 +175,7 @@ where
     W: Widget<N>,
     N: Name,
 {
-    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
+    fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         self.read().unwrap().render(ctx)
     }
 
@@ -162,6 +188,10 @@ where
 
     fn name(&self) -> Option<N> {
         self.read().unwrap().name()
+    }
+
+    fn widget_type(&self) -> &'static str {
+        self.read().unwrap().widget_type()
     }
 }
 

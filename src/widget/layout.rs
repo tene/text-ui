@@ -34,7 +34,7 @@ where
         None
     }
 
-    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
+    fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         let dir = self.direction;
         // Clippy complains about a complex type here; I'm not convinced it's an improvement.
         type Segments<T> = (Vec<(usize, T)>, Vec<(usize, T)>);
@@ -79,6 +79,9 @@ where
         let mut blocks = blocks.into_iter().map(|(_, b)| b);
         let init = blocks.next().expect("Linear layout with no children");
         blocks.fold(init, |acc, b| acc.concat_dir(dir, b))
+    }
+    fn widget_type(&self) -> &'static str {
+        "Linear"
     }
 }
 

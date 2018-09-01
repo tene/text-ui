@@ -23,7 +23,7 @@ impl<N> Widget<N> for Line
 where
     N: Name,
 {
-    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
+    fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         let count = ctx
             .bound()
             .in_direction(self.direction)
@@ -54,5 +54,8 @@ where
     }
     fn name(&self) -> Option<N> {
         None
+    }
+    fn widget_type(&self) -> &'static str {
+        "Line"
     }
 }

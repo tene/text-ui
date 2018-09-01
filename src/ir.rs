@@ -14,18 +14,18 @@ use {
 #[derive(Debug, Clone, Copy)]
 pub struct ContentID<N: Name> {
     pub name: Option<N>,
-    pub widget: &'static str,
+    pub widget_type: &'static str,
     pub class: &'static str,
 }
 
 impl<N: Name> ContentID<N> {
     pub fn as_tuple(self) -> (Option<N>, &'static str, &'static str) {
-        (self.name, self.widget, self.class)
+        (self.name, self.widget_type, self.class)
     }
-    pub fn new(name: Option<N>, widget: &'static str, class: &'static str) -> Self {
+    pub fn new(name: Option<N>, widget_type: &'static str, class: &'static str) -> Self {
         Self {
             name,
-            widget,
+            widget_type,
             class,
         }
     }
@@ -118,7 +118,7 @@ pub struct TextBlock<N: Name> {
 }
 
 impl<N: Name> TextBlock<N> {
-    pub fn new(lines: Vec<TextLine<N>>, width: usize, height: usize) -> Self {
+    pub(crate) fn new(lines: Vec<TextLine<N>>, width: usize, height: usize) -> Self {
         assert_eq!(lines.len(), height);
         let mut empty_line = Vec::new();
         // https://github.com/rust-lang/rust/issues/41758
@@ -134,6 +134,9 @@ impl<N: Name> TextBlock<N> {
             lines,
             size,
         }
+    }
+    pub fn new_clipped(lines: Vec<TextLine<N>>, width: usize, height: usize) -> Self {
+        let tb = Self::new(lines);
     }
     pub fn handle_key(&self, event_ctx: &EventContext<N>, focus: &N, key: Key) {
         use ShouldPropagate::*;

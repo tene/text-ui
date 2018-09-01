@@ -36,7 +36,7 @@ impl<N: Name + 'static, B: RenderBackend> Executor<N, B> {
         let input_sender = self.sender.clone();
         let event_ctx = EventContext::new(self.sender.clone());
         'outer: loop {
-            let render_ctx = RenderContext::new(self.size.into());
+            let render_ctx = RenderContext::from_widget(self.size.into(), app);
             let ui: TextBlock<N> = app.render(render_ctx);
             let frame = ui.render_frame(app, Some(focus));
             self.be.paint_frame(frame);

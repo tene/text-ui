@@ -38,7 +38,7 @@ where
     fn name(&self) -> Option<N> {
         self.name
     }
-    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
+    fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         //let scroll_pos = self.scroll_pos.clone();
         let text = TextBlock::new_lines(self.name, "Log", "Content", self.lines.clone());
         ctx.text(text) /*.add_key_handler(
@@ -61,5 +61,8 @@ where
                 }
             }),
         )*/
+    }
+    fn widget_type(&self) -> &'static str {
+        "Log"
     }
 }

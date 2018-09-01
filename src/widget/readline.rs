@@ -119,7 +119,7 @@ where
     fn name(&self) -> Option<N> {
         Some(self.inner.read().unwrap().name)
     }
-    fn render(&self, ctx: RenderContext) -> TextBlock<N> {
+    fn render(&self, ctx: RenderContext<N>) -> TextBlock<N> {
         let inner = self.inner.clone();
         let inner2 = inner.clone();
         let name = inner.read().unwrap().name;
@@ -146,5 +146,8 @@ where
     }
     fn growth_policy(&self) -> FullGrowthPolicy {
         FullGrowthPolicy::fixed_height()
+    }
+    fn widget_type(&self) -> &'static str {
+        "Input"
     }
 }
