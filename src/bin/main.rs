@@ -1,6 +1,6 @@
 extern crate text_ui;
 use text_ui::input::Key;
-use text_ui::widget::{Log, Readline};
+use text_ui::widget::{List, Log, Readline};
 use text_ui::{
     shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
     ContentID, EventContext, Executor, InputEvent, Line, RenderContext, Shared, Size,
@@ -13,6 +13,8 @@ enum MyNames {
     Log2,
     Input1,
     Input2,
+    NumberList,
+    Number(usize),
 }
 
 #[derive(Debug)]
@@ -21,12 +23,13 @@ struct DemoApp {
     pub log2: Shared<Log<MyNames>>,
     pub rl1: Readline<MyNames>,
     pub rl2: Readline<MyNames>,
+    pub nl: List<MyNames, Vec<Log<MyNames>>>,
 }
 
 impl DemoApp {
     pub fn new() -> Self {
-        let log1 = shared(Log::new(Some(MyNames::Log1), Some(Color::Red)));
-        let log2 = shared(Log::new(Some(MyNames::Log2), Some(Color::LightGreen)));
+        let log1 = shared(Log::new(Some(MyNames::Log1)));
+        let log2 = shared(Log::new(Some(MyNames::Log2)));
         let logref1 = log1.clone();
         let logref2 = log2.clone();
         let rl1 = Readline::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
@@ -47,11 +50,21 @@ impl DemoApp {
                 Err(_) => false,
             },
         }));
+        let numbers: Vec<Log<MyNames>> = (1..100)
+            .map(|i| {
+                let mut log = Log::new(Some(MyNames::Number(i)));
+                for _ in 0..i {
+                    log.log_msg(&format!("Blah {}", i));
+                }
+                log
+            }).collect();
+        let nl = List::new(Some(MyNames::NumberList), numbers, 5, 2);
         Self {
             log1,
             log2,
             rl1,
             rl2,
+            nl,
         }
     }
 }
@@ -63,7 +76,8 @@ impl Widget<MyNames> for DemoApp {
     fn render(&self, ctx: RenderContext<MyNames>) -> TextBlock<MyNames> {
         let vline = Line::vertical();
         let hline = Line::horizontal();
-        let logs: Linear<MyNames> = Linear::hbox(vec![&self.log1, &vline, &self.log2]);
+        let logs: Linear<MyNames> =
+            Linear::hbox(vec![&self.log1, &vline, &self.log2, &vline, &self.nl]);
         let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
         ui.render(ctx)
     }
@@ -109,6 +123,12 @@ impl App<MyNames> for DemoApp {
         match cid.as_tuple() {
             (Some(MyNames::Log1), ..) => (Some(Color::Red), None),
             (Some(MyNames::Log2), ..) => (Some(Color::LightGreen), None),
+            (Some(MyNames::Number(n)), ..) => match n % 3 {
+                0 => (Some(Color::LightBlue), None),
+                1 => (Some(Color::LightRed), None),
+                2 => (Some(Color::LightYellow), None),
+                _ => unreachable!(),
+            },
             (_, _, _) => (None, None),
         }
     }

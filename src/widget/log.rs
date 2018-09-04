@@ -1,5 +1,5 @@
 //use input::{MouseButton, MouseEvent};
-use {shared, Color, Name, RenderContext, Shared, TextBlock, Widget};
+use {shared, Name, RenderContext, Shared, TextBlock, Widget};
 
 #[derive(Debug, Default)]
 pub struct Log<N: Name> {
@@ -7,14 +7,13 @@ pub struct Log<N: Name> {
     pub scroll_pos: Shared<usize>,
     pub selected: Option<usize>,
     pub name: Option<N>,
-    pub fg: Option<Color>,
 }
 
 impl<N> Log<N>
 where
     N: Name,
 {
-    pub fn new(name: Option<N>, fg: Option<Color>) -> Self {
+    pub fn new(name: Option<N>) -> Self {
         let lines = vec![];
         let scroll_pos = shared(0);
         let selected = None;
@@ -22,7 +21,6 @@ where
             lines,
             scroll_pos,
             selected,
-            fg,
             name,
         }
     }

@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::hash::Hash;
+use std::slice;
 
 pub struct IndexTree<N, I>
 where
@@ -98,6 +99,10 @@ where
             parents: &self.parents,
             idx,
         }
+    }
+
+    pub fn iter_all_mut(&mut self) -> slice::IterMut<I> {
+        self.items.iter_mut()
     }
 }
 

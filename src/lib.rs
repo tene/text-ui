@@ -2,7 +2,9 @@
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
+#![cfg_attr(feature = "cargo-clippy", allow(expect_fun_call))]
 
+extern crate itertools;
 extern crate libc;
 extern crate signal_hook;
 extern crate termion;
@@ -31,6 +33,7 @@ pub use widget::{
 pub enum AppEvent<N: Name> {
     Exit,
     SetFocus(N),
+    Redraw,
 }
 
 pub type Shared<T> = Arc<RwLock<T>>;
@@ -143,6 +146,13 @@ impl ops::Sub for Pos {
         let col = self.col - other.col;
         let row = self.row - other.row;
         Self { col, row }
+    }
+}
+
+impl ops::SubAssign for Pos {
+    fn sub_assign(&mut self, other: Self) {
+        self.col -= other.col;
+        self.row -= other.row;
     }
 }
 

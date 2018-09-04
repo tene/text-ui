@@ -46,6 +46,7 @@ impl<N: Name + 'static, B: RenderBackend> Executor<N, B> {
             }
             for event in self.receiver.try_iter() {
                 match event {
+                    Event::App(AppEvent::Redraw) => {}
                     Event::App(AppEvent::Exit) => break 'outer,
                     Event::App(AppEvent::SetFocus(f)) => focus = f,
                     Event::Resize(size) => {

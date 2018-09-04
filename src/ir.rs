@@ -243,6 +243,33 @@ impl<N: Name> TextBlock<N> {
     pub fn get_cursor(&self, name: N) -> Option<Pos> {
         self.cursors.get(&name).cloned()
     }
+    pub fn trim_top(mut self, mut trim_lines: usize) -> Self {
+        if trim_lines >= self.size.rows {
+            trim_lines = self.size.rows;
+        }
+        self.lines = self.lines.split_off(trim_lines);
+        self.hit_map = self.hit_map.split_off(trim_lines);
+        for (_name, mut pos, _cb) in self.mouse_callbacks.iter_all_mut() {
+            pos -= Pos::new(0, trim_lines)
+        }
+        // XXX TODO Probably best to remove these entirely if they're in the trimmed region
+        for mut pos in self.cursors.values_mut() {
+            *pos -= Pos::new(0, trim_lines)
+        }
+        self.size.rows -= trim_lines;
+        self
+    }
+    pub fn trim_bottom(mut self, mut trim_lines: usize) -> Self {
+        if trim_lines >= self.size.rows {
+            trim_lines = self.size.rows;
+        }
+        let trim_idx = self.size.rows - trim_lines;
+        self.lines.truncate(trim_idx);
+        self.hit_map.truncate(trim_idx);
+        // XXX TODO drop cursors in trimmed region
+        self.size.rows -= trim_lines;
+        self
+    }
     // Maybe factor out the common parts of these?
     pub fn vconcat(mut self, mut other: Self) -> Self {
         assert_eq!(self.size.cols, other.size.cols); // XXX TODO Maybe expand the smaller to fit?
