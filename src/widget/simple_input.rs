@@ -5,25 +5,25 @@ use {
     TextBlock, Widget,
 };
 
-pub enum ReadlineEvent<'a, N>
+pub enum SimpleInputEvent<'a, N>
 where
     N: 'a + Name,
 {
     Submitted { name: &'a N, line: &'a str },
 }
 
-struct ReadlineInner<N>
+struct SimpleInputInner<N>
 where
     N: Name,
 {
     pub name: N,
     pub line: String,
     pub index: usize,
-    pub listeners: Vec<Box<Fn(&ReadlineEvent<N>) -> bool>>,
+    pub listeners: Vec<Box<Fn(&SimpleInputEvent<N>) -> bool>>,
     // XXX TODO Prompt
 }
 
-impl<N> ReadlineInner<N>
+impl<N> SimpleInputInner<N>
 where
     N: Name,
 {
@@ -31,21 +31,21 @@ where
         let line = String::new();
         let index = 0;
         let listeners = vec![];
-        ReadlineInner {
+        SimpleInputInner {
             name,
             line,
             index,
             listeners,
         }
     }
-    pub fn add_listener(&mut self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) {
+    pub fn add_listener(&mut self, l: Box<Fn(&SimpleInputEvent<N>) -> bool>) {
         self.listeners.push(l)
     }
     fn submit(&mut self) {
         self.index = 0;
         let line = &self.line.split_off(0);
         let name = &self.name;
-        let event = ReadlineEvent::Submitted { name, line };
+        let event = SimpleInputEvent::Submitted { name, line };
         self.listeners.retain(|l| l(&event));
     }
     pub fn handle_key(&mut self, key: Key) -> ShouldPropagate {
@@ -69,41 +69,41 @@ where
     }
 }
 
-impl<N> fmt::Debug for ReadlineInner<N>
+impl<N> fmt::Debug for SimpleInputInner<N>
 where
     N: Name,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Readline {{ name: {:?}, index: {}, line: {} }}",
+            "SimpleInput {{ name: {:?}, index: {}, line: {} }}",
             self.name, self.index, self.line
         )
     }
 }
 
-pub struct Readline<N>
+pub struct SimpleInput<N>
 where
     N: Name,
 {
-    inner: Shared<ReadlineInner<N>>,
+    inner: Shared<SimpleInputInner<N>>,
 }
 
-impl<N> Readline<N>
+impl<N> SimpleInput<N>
 where
     N: Name,
 {
     pub fn new(name: N) -> Self {
-        let inner = shared(ReadlineInner::new(name));
-        Readline { inner }
+        let inner = shared(SimpleInputInner::new(name));
+        SimpleInput { inner }
     }
-    pub fn add_listener(self, l: Box<Fn(&ReadlineEvent<N>) -> bool>) -> Self {
+    pub fn add_listener(self, l: Box<Fn(&SimpleInputEvent<N>) -> bool>) -> Self {
         self.inner.write().unwrap().add_listener(l);
         self
     }
 }
 
-impl<N> fmt::Debug for Readline<N>
+impl<N> fmt::Debug for SimpleInput<N>
 where
     N: Name,
 {
@@ -112,7 +112,7 @@ where
     }
 }
 
-impl<N> Widget<N> for Readline<N>
+impl<N> Widget<N> for SimpleInput<N>
 where
     N: 'static + Name,
 {
@@ -143,6 +143,6 @@ where
         FullGrowthPolicy::fixed_height()
     }
     fn widget_type(&self) -> &'static str {
-        "Input"
+        "SimpleInput"
     }
 }

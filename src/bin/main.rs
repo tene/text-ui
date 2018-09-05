@@ -1,8 +1,8 @@
 extern crate text_ui;
 use text_ui::input::Key;
-use text_ui::widget::{List, Log, Readline};
+use text_ui::widget::{List, Log, SimpleInput};
 use text_ui::{
-    shared, widget::layout::Linear, widget::readline::ReadlineEvent, App, AppEvent, Color,
+    shared, widget::layout::Linear, widget::simple_input::SimpleInputEvent, App, AppEvent, Color,
     ContentID, EventContext, Executor, InputEvent, Line, RenderContext, Shared, Size,
     TermionBackend, TextBlock, Widget,
 };
@@ -21,8 +21,8 @@ enum MyNames {
 struct DemoApp {
     pub log1: Shared<Log<MyNames>>,
     pub log2: Shared<Log<MyNames>>,
-    pub rl1: Readline<MyNames>,
-    pub rl2: Readline<MyNames>,
+    pub rl1: SimpleInput<MyNames>,
+    pub rl2: SimpleInput<MyNames>,
     pub nl: List<MyNames, Vec<Log<MyNames>>>,
 }
 
@@ -32,8 +32,8 @@ impl DemoApp {
         let log2 = shared(Log::new(Some(MyNames::Log2)));
         let logref1 = log1.clone();
         let logref2 = log2.clone();
-        let rl1 = Readline::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
-            ReadlineEvent::Submitted { line, .. } => match logref1.write() {
+        let rl1 = SimpleInput::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
+            SimpleInputEvent::Submitted { line, .. } => match logref1.write() {
                 Ok(mut log) => {
                     log.log_msg(line);
                     true
@@ -41,8 +41,8 @@ impl DemoApp {
                 Err(_) => false,
             },
         }));
-        let rl2 = Readline::new(MyNames::Input2).add_listener(Box::new(move |e| match e {
-            ReadlineEvent::Submitted { line, .. } => match logref2.write() {
+        let rl2 = SimpleInput::new(MyNames::Input2).add_listener(Box::new(move |e| match e {
+            SimpleInputEvent::Submitted { line, .. } => match logref2.write() {
                 Ok(mut log) => {
                     log.log_msg(line);
                     true
