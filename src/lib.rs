@@ -3,12 +3,24 @@
 #![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
 #![cfg_attr(feature = "cargo-clippy", allow(expect_fun_call))]
+// Clippy warnings in Readline code imported from rustyline
+#![cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
+#![cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
+#![cfg_attr(feature = "cargo-clippy", allow(len_zero))]
+#![cfg_attr(
+    feature = "cargo-clippy",
+    allow(if_let_redundant_pattern_matching)
+)]
+#![cfg_attr(feature = "cargo-clippy", allow(if_same_then_else))]
+#![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
 
 extern crate itertools;
 extern crate libc;
 extern crate signal_hook;
 extern crate termion;
 extern crate unicode_segmentation;
+#[macro_use]
+extern crate log;
 
 use std::ops;
 use std::sync::{Arc, RwLock};
@@ -25,8 +37,8 @@ pub use executor::Executor;
 pub use input::{InputEvent, Key, MouseEvent};
 pub use ir::{ContentID, Frame, FrameLine, Segment, TextBlock, TextLine};
 pub use widget::{
-    App, BackendContext, EventContext, KeyCallback, Line, Linear, MouseCallback, Name,
-    RenderBackend, RenderContext, ShouldPropagate, Widget,
+    App, BackendContext, EventContext, KeyCallback, Line, Linear, MouseCallback, Name, Readline,
+    ReadlineEvent, RenderBackend, RenderContext, ShouldPropagate, Widget,
 };
 
 #[derive(Debug, PartialEq)]

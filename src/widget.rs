@@ -9,12 +9,14 @@ pub mod layout;
 pub mod line;
 pub mod list;
 pub mod log;
+pub mod readline;
 pub mod simple_input;
 
 pub use self::layout::Linear;
 pub use self::line::Line;
 pub use self::list::List;
 pub use self::log::Log;
+pub use self::readline::{Readline, ReadlineEvent};
 pub use self::simple_input::SimpleInput;
 
 use executor::Event;

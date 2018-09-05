@@ -3,8 +3,8 @@ use text_ui::input::Key;
 use text_ui::widget::{List, Log, SimpleInput};
 use text_ui::{
     shared, widget::layout::Linear, widget::simple_input::SimpleInputEvent, App, AppEvent, Color,
-    ContentID, EventContext, Executor, InputEvent, Line, RenderContext, Shared, Size,
-    TermionBackend, TextBlock, Widget,
+    ContentID, EventContext, Executor, InputEvent, Line, Readline, ReadlineEvent, RenderContext,
+    Shared, Size, TermionBackend, TextBlock, Widget,
 };
 
 #[derive(Clone, Copy, Hash, PartialEq, Eq, Debug)]
@@ -21,8 +21,8 @@ enum MyNames {
 struct DemoApp {
     pub log1: Shared<Log<MyNames>>,
     pub log2: Shared<Log<MyNames>>,
-    pub rl1: SimpleInput<MyNames>,
-    pub rl2: SimpleInput<MyNames>,
+    pub simpleinput: SimpleInput<MyNames>,
+    pub rlinput: Readline<MyNames>,
     pub nl: List<MyNames, Vec<Log<MyNames>>>,
 }
 
@@ -32,17 +32,18 @@ impl DemoApp {
         let log2 = shared(Log::new(Some(MyNames::Log2)));
         let logref1 = log1.clone();
         let logref2 = log2.clone();
-        let rl1 = SimpleInput::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
-            SimpleInputEvent::Submitted { line, .. } => match logref1.write() {
-                Ok(mut log) => {
-                    log.log_msg(line);
-                    true
-                }
-                Err(_) => false,
-            },
-        }));
-        let rl2 = SimpleInput::new(MyNames::Input2).add_listener(Box::new(move |e| match e {
-            SimpleInputEvent::Submitted { line, .. } => match logref2.write() {
+        let simpleinput =
+            SimpleInput::new(MyNames::Input1).add_listener(Box::new(move |e| match e {
+                SimpleInputEvent::Submitted { line, .. } => match logref1.write() {
+                    Ok(mut log) => {
+                        log.log_msg(line);
+                        true
+                    }
+                    Err(_) => false,
+                },
+            }));
+        let rlinput = Readline::new(MyNames::Input2).add_listener(Box::new(move |e| match e {
+            ReadlineEvent::Submitted { line, .. } => match logref2.write() {
                 Ok(mut log) => {
                     log.log_msg(line);
                     true
@@ -62,8 +63,8 @@ impl DemoApp {
         Self {
             log1,
             log2,
-            rl1,
-            rl2,
+            simpleinput,
+            rlinput,
             nl,
         }
     }
@@ -78,7 +79,13 @@ impl Widget<MyNames> for DemoApp {
         let hline = Line::horizontal();
         let logs: Linear<MyNames> =
             Linear::hbox(vec![&self.log1, &vline, &self.log2, &vline, &self.nl]);
-        let ui = Linear::vbox(vec![&logs, &hline, &self.rl1, &hline, &self.rl2]);
+        let ui = Linear::vbox(vec![
+            &logs,
+            &hline,
+            &self.simpleinput,
+            &hline,
+            &self.rlinput,
+        ]);
         ui.render(ctx)
     }
     fn widget_type(&self) -> &'static str {

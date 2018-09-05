@@ -1,0 +1,5 @@
+This is a half-assed port of https://github.com/kkawakam/rustyline
+
+I'd eventually like to break this out into an abstract "Readline
+Engine" library that can be reused by any library or application
+that wants to support readline-style text interaction.
