@@ -124,10 +124,11 @@ where
     N: Name,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "List {{ name: {:?}, index: {:?}, offset: {:?}, container: {:?} }}",
-            self.name, self.index, self.offset, self.container
-        )
+        f.debug_struct("WidgetList")
+            .field("name", &self.name)
+            .field("index", &self.index)
+            .field("offset", &self.offset)
+            .field("container", &self.container)
+            .finish()
     }
 }

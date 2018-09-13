@@ -74,11 +74,11 @@ where
     N: Name,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "SimpleInput {{ name: {:?}, index: {}, line: {} }}",
-            self.name, self.index, self.line
-        )
+        f.debug_struct("SimpleInput")
+            .field("name", &self.name)
+            .field("index", &self.index)
+            .field("line", &self.line)
+            .finish()
     }
 }
 

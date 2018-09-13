@@ -90,10 +90,9 @@ where
     N: 'a + Name,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Linear {{ direction: {:?}, widgets: {:?}}}",
-            self.direction, self.widgets
-        )
+        f.debug_struct("Linear")
+            .field("direction", &self.direction)
+            .field("widgets", &self.widgets)
+            .finish()
     }
 }
