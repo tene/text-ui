@@ -1,4 +1,3 @@
-#![feature(rust_2018_preview)]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy))]
 #![cfg_attr(feature = "cargo-clippy", allow(type_complexity))]
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default))]
@@ -7,10 +6,7 @@
 #![cfg_attr(feature = "cargo-clippy", allow(many_single_char_names))]
 #![cfg_attr(feature = "cargo-clippy", allow(needless_pass_by_value))]
 #![cfg_attr(feature = "cargo-clippy", allow(len_zero))]
-#![cfg_attr(
-    feature = "cargo-clippy",
-    allow(if_let_redundant_pattern_matching)
-)]
+#![cfg_attr(feature = "cargo-clippy", allow(if_let_redundant_pattern_matching))]
 #![cfg_attr(feature = "cargo-clippy", allow(if_same_then_else))]
 #![cfg_attr(feature = "cargo-clippy", allow(new_without_default_derive))]
 
